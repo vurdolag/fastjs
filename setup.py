@@ -2,18 +2,17 @@ from setuptools import setup, Extension
 
 
 arg_compile = [
-    '-std:c++17', '-O2',
-    #'/arch:AVX'
+    '-O2'
 ]
 
 
-module1 = Extension('zjson',
-                    sources=['src/zjson.cpp'],
+module1 = Extension('fastjs',
+                    sources=['src/fastjs.cpp'],
                     extra_compile_args=arg_compile)
 
 setup(
-    name='zjson',
-    version='1.0.0',
+    name='fastjs',
+    version='1.0.1',
     description='This is a demo package',
     ext_modules=[module1]
 )

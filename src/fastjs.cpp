@@ -49,7 +49,7 @@ protected:
     size_t buffer_size = 0;
 
     bool non_string_key = false;
-    bool using_cache_string = true;
+    bool using_cache_string = false;
 
 
     inline void realloc_mem(const size_t n) {
@@ -259,11 +259,11 @@ protected:
 
         add_char(open_list);
         while (i < len) {
-            if (!first) { add_char(comma); } else { first = false; }
             main_dump(PyList_GetItem(s, i));
+            add_char(comma);
             ++i;
         }
-        add_char(close_list);
+        *(str - 1) = close_list;
     }
 
     virtual void add_tuple(PyObject * s) {
@@ -275,11 +275,11 @@ protected:
 
         add_char(open_list);
         while (i < len) {
-            if (!first) { add_char(comma); } else { first = false; }
             main_dump(PyTuple_GetItem(s, i));
+            add_char(comma);
             ++i;
         }
-        add_char(close_list);
+        *(str - 1) = close_list;
     }
 
     virtual void add_dict(PyObject * s, bool is_class = false) {
@@ -295,12 +295,12 @@ protected:
             if (is_class) {
                 obj_class_checker
             }
-            if (!first) { add_char(comma); } else { first = false; }
             add_obj_key(key);
             add_char(colon);
             main_dump(value);
+            add_char(comma);
         }
-        add_char(close_obj);
+        *(str - 1) = close_obj;
     }
 
     template <class T>
@@ -528,13 +528,13 @@ public:
     }
 
     ~BaseDump() {
-        if (mem_size_ > 1024 * 512) {
-            PyMem_RawFree(mem_char_);
-            mem_char_ = nullptr;
-        }
-        if (mem_size_ / (str - start_str) >= 4) {
-            mem_size_ = mem_size_ / 2;
-        }
+        //if (mem_size_ > 1024 * 512) {
+        //    PyMem_RawFree(mem_char_);
+        //    mem_char_ = nullptr;
+        //}
+        //if (mem_size_ / (str - start_str) >= 4) {
+        //    mem_size_ = mem_size_ / 2;
+       // }
     }
 
 };
@@ -1591,7 +1591,7 @@ static PyMethodDef methods[] = {
 
 static struct PyModuleDef module_def = {
         PyModuleDef_HEAD_INIT,
-        "zjson",
+        "fastjs",
         nullptr,
         -1,
         methods,
@@ -1600,7 +1600,7 @@ static struct PyModuleDef module_def = {
 
 
 
-PyMODINIT_FUNC PyInit_zjson() {
+PyMODINIT_FUNC PyInit_fastjs() {
     return PyModule_Create(&module_def);
 }
 
