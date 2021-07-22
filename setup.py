@@ -7,7 +7,8 @@ arg_compile = [
 
 
 module1 = Extension('fastjs',
-                    sources=['src/fastjs.cpp', 'src/validator.cpp'],
+                    sources=['src/fastjs.cpp',
+                             'src/validator.cpp'],
                     extra_compile_args=arg_compile)
 
 with open("README.md", encoding="utf-8") as f:
@@ -16,7 +17,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name='fastjs',
-    version='1.0.2',
+    version='1.0.3',
     description='Faster json decoder, encoder, validator, written in c++ for Python',
     long_description=long_description,
     ext_modules=[module1],

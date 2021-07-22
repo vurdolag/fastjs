@@ -1,7 +1,5 @@
 #include <Python.h>
-#include "iostream"
 #include <unordered_map>
-#include <vector>
 
 
 using namespace std;
@@ -62,7 +60,7 @@ PyObject * get_dataclass_fields(PyObject * val) {
 
 
 
-PyObject * _validate(PyObject * val);
+PyObject * _validate(PyObject * val, PyObject * kwargs);
 bool is_already_add_PyType(PyObject * val);
 
 
@@ -196,7 +194,7 @@ struct TypeField {
                 if (is_already_add_PyType(val)) {
                     type = (size_t)val;
                 } else {
-                    _validate(val);
+                    _validate(val, nullptr);
                     type = (size_t)val;
                 }
 
@@ -228,7 +226,7 @@ struct TypeField {
 
             if (sub_obj && sub_type == USERTYPE_) {
                 if (!is_already_add_PyType(sub_obj)) {
-                    _validate(sub_obj);
+                    _validate(sub_obj, nullptr);
                 }
                 sub_type = (size_t)sub_obj;
             }
@@ -467,6 +465,7 @@ inline void add_type(PyObject * obj, PyObject * origin_obj) {
 
 
 
+/*
 
 void print_type(size_t t) {
     switch (t) {
@@ -526,7 +525,7 @@ void print_type(size_t t) {
     }
 }
 
-
+*/
 
 
 inline bool is_already_add_PyType(PyObject * val) {
@@ -826,7 +825,7 @@ PyObject * _validate(PyObject * val, PyObject * kwargs) {
 }
 
 
-
+/*
 
 void print_sub(Base_type * b) {
     print_type(b->type);
@@ -871,7 +870,7 @@ PyObject * print(PyObject *self, PyObject *args) {
 }
 
 
-
+*/
 
 
 PyObject * free(PyObject *self, PyObject *args) {
