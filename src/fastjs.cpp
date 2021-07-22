@@ -18,14 +18,6 @@ const uint32_t js_true = 't';
 const uint32_t js_false = 'f';
 const uint32_t js_null = 'n';
 const uint32_t int_0 = '0';
-const uint32_t int_1 = '1';
-const uint32_t int_2 = '2';
-const uint32_t int_3 = '3';
-const uint32_t int_4 = '4';
-const uint32_t int_5 = '5';
-const uint32_t int_6 = '6';
-const uint32_t int_7 = '7';
-const uint32_t int_8 = '8';
 const uint32_t int_9 = '9';
 const uint32_t df = '-';
 const uint32_t ddf = '_';
@@ -227,36 +219,24 @@ Py_hash_t __as_string_hash = PyObject_Hash(__as_string);
 
 
 
-struct Spaces4 {
-    uint8_t a[8] = " \0 \0 \0 ";
-};
-
 struct Spaces4_ {
-    uint8_t a[5] = "    ";
+    uint8_t a[4] {' ', ' ', ' ', ' '};
 };
 
-struct False5 {
-    uint8_t a[10] = "f\0a\0l\0s\0e";
+struct Spaces4 {
+    Spaces4_ a[8] = {' ', 0, ' ', 0, ' ', 0, ' ', 0};
 };
 
 struct False5_ {
-    uint8_t a[6] = "false";
-};
-
-struct True4 {
-    uint8_t a[8] = "t\0r\0u\0e";
+    uint8_t a[5] = {'f', 'a', 'l', 's', 'e'};
 };
 
 struct True4_ {
-    uint8_t a[5] = "true";
-};
-
-struct Null4 {
-    uint8_t a[8] = "n\0u\0l\0l";
+    uint8_t a[4] = {'t', 'r', 'u', 'e'};
 };
 
 struct Null4_ {
-    uint8_t a[5] = "null";
+    uint8_t a[4] = {'n', 'u', 'l', 'l'};
 };
 
 
@@ -813,22 +793,6 @@ public:
 
 
 class dumper : public BaseDump<uint16_t> {
-    inline void add_null() override  {
-        check(14);
-        *(Null4 *)str = Null4();
-        str += 4;
-    }
-
-    inline void add_bool (PyObject * s) override {
-        check(10);
-        if (s == Py_True) {
-            *(True4 *)str = True4();
-            str += 4;
-        } else {
-            *(False5 *)str = False5();
-            str += 5;
-        }
-    }
 
 public:
     dumper(bool _non_string_key) {

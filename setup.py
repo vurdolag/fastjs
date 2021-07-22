@@ -9,6 +9,7 @@ arg_compile = [
 module1 = Extension('fastjs',
                     sources=['src/fastjs.cpp',
                              'src/validator.cpp'],
+                    include_dirs=["./src", "./ryu"],
                     extra_compile_args=arg_compile)
 
 with open("README.md", encoding="utf-8") as f:
