@@ -1645,7 +1645,7 @@ static PyObject * dumps(PyObject *self, PyObject *args, PyObject *kwargs) {
 
 
 
-PyObject * validate(PyObject *self, PyObject *args);
+PyObject * validate(PyObject *self, PyObject *args, PyObject * kwargs);
 PyObject * print(PyObject *self, PyObject *args);
 PyObject * free(PyObject *self, PyObject *args);
 
@@ -1655,7 +1655,7 @@ static PyMethodDef methods[] = {
         { "free", (PyCFunction)free, METH_VARARGS,  "free" },
         { "print", (PyCFunction)print, METH_VARARGS,  "print" },
         { "clear", (PyCFunction)clear, METH_VARARGS,  "clear" },
-        { "validate", (PyCFunction)validate, METH_VARARGS,  "validate" },
+        { "validate", (PyCFunction)validate, METH_VARARGS | METH_KEYWORDS,  "validate" },
         { "dumps", (PyCFunction)dumps, METH_VARARGS | METH_KEYWORDS,  "dumps" },
         { "loads", (PyCFunction)loads, METH_VARARGS,  "loads" },
         // Terminate the array with an object containing nulls.

@@ -782,7 +782,7 @@ PyObject * check_object(PyObject * obj) {
 
 
 
-PyObject * _validate(PyObject * val) {
+PyObject * _validate(PyObject * val, PyObject * kwargs) {
     PyObject * dataclass_val = nullptr;
 
     if (PyFunction_Check(val) || PyMethod_Check(val)) {
@@ -811,7 +811,11 @@ PyObject * _validate(PyObject * val) {
             return nullptr;
         }
 
-        dataclass_val = PyObject_CallFunctionObjArgs(dataclass, val);
+        if (kwargs) {
+            dataclass_val = PyObject_Call(dataclass, val, kwargs);
+        } else {
+            dataclass_val = PyObject_CallFunctionObjArgs(dataclass, val);
+        }
 
         if (dataclass_val && !is_already_add_PyType(val)) {
             add_type(dataclass_val, val);
@@ -879,8 +883,8 @@ PyObject * free(PyObject *self, PyObject *args) {
 }
 
 
-PyObject * validate(PyObject *self, PyObject *args) {
+PyObject * validate(PyObject *self, PyObject *args, PyObject * kwargs) {
     PyObject * val = PyTuple_GetItem(args, 0);
-    return _validate(val);
+    return _validate(val, kwargs);
 }
 
