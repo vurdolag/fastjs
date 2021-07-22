@@ -12,7 +12,7 @@ module1 = Extension('fastjs',
 
 setup(
     name='fastjs',
-    version='1.0.1',
-    description='This is a demo package',
+    version='1.0.2',
+    description='Faster json decoder, encoder, validator, written in c++ for Python',
     ext_modules=[module1]
 )
