@@ -7,7 +7,7 @@ arg_compile = [
 
 
 module1 = Extension('fastjs',
-                    sources=['src/fastjs.cpp'],
+                    sources=['src/fastjs.cpp', 'src/validator.cpp'],
                     extra_compile_args=arg_compile)
 
 setup(

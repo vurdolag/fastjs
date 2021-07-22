@@ -15,7 +15,7 @@
     *out++ = slash;                                                 \
     *out++ = 'u';                                                   \
     DEC_TO_HEX(_v, out);                                            \
-    out += 4;
+    out += 4
 
 
 #define str_serialization_32                                        \
@@ -25,16 +25,18 @@
         uint32_t h = 0;                                             \
         uint32_t l = 0;                                             \
         convertUTF32ToUTF16(*source++, h, l);                       \
-        _utf32toutf16(h)                                            \
-        _utf32toutf16(l)                                            \
+        _utf32toutf16(h);                                           \
+        _utf32toutf16(l);                                           \
     }
 
 
 #define obj_class_checker                                           \
-    c = PyUnicode_AsUTF8(key);                                      \
-    len_s = PyUnicode_GetLength(key);                               \
-    if (len_s > 1 && *c == ddf && *(c + 1) == ddf) continue;        \
-    if (PyFunction_Check(value) || PyMethod_Check(value)) continue;
+    const char * c = PyUnicode_AsUTF8(key);                         \
+    if (PyUnicode_GetLength(key) > 1 && *c == ddf) continue;        \
+    if (PyFunction_Check(value) || PyMethod_Check(value)) continue; \
+    key = check_field(key, value, js_dataclass_index);              \
+    if (!key) continue
+
 
 
 #define str_pars_and_check(_n, _kind)                               \
@@ -66,7 +68,7 @@
                 return set_error("error simbol");                   \
             }                                                       \
     }                                                               \
-    buff[_n] = ptr[_n];
+    buff[_n] = ptr[_n]
 
 
 #define int_pars_and_check                                          \
@@ -107,7 +109,7 @@
                 }                                                   \
             }                                                       \
     }                                                               \
-    data++;
+    data++
 
 
 #define bytes_escape_pars_and_check(_n)                             \
@@ -126,4 +128,4 @@
                 return set_error("error simbol");                   \
             }                                                       \
     }                                                               \
-    buff[_n] = ptr[_n];
+    buff[_n] = ptr[_n]
