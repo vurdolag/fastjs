@@ -277,7 +277,7 @@ static Cache * mem_cache_string_ = nullptr;
 
 
 int check_js_dataclass(PyObject * v);
-PyObject * check_field(PyObject * key, PyObject * value, int  i);
+PyObject * check_field(PyObject * key, PyObject * value, int i);
 PyObject * check_object(PyObject * obj);
 
 
@@ -292,6 +292,12 @@ protected:
     bool non_string_key = false;
     bool using_cache_string = false;
 
+    bool is_error = false;
+
+    PyObject * set_error(const char * msg) {
+        PyErr_Format(PyExc_ValueError, "%s", msg);
+        return nullptr;
+    }
 
     inline void realloc_mem(const size_t n) {
         size_t old_pos = str - start_str;
@@ -1654,6 +1660,9 @@ protected:
                     case colon:
                         return set_error("error token }]:");
                 }
+            }
+            if (*data != space && *data != ent) {
+                return set_error("pars error");
             }
             next_char_not_space();
         }

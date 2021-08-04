@@ -13,6 +13,7 @@ PyObject * __name__ = PyUnicode_FromString("__name__");
 PyObject * __dataclass_fields__ = PyUnicode_FromString("__dataclass_fields__");
 PyObject * __skip = PyUnicode_FromString("skip");
 PyObject * __skip_if_none = PyUnicode_FromString("skip_if_none");
+PyObject * __const_len = PyUnicode_FromString("const_len");
 PyObject * __js_name = PyUnicode_FromString("name");
 
 
@@ -159,6 +160,7 @@ struct Base_type {
 struct Metadata {
     PyObject * js_name = nullptr;
     Py_hash_t hash = 0;
+    long const_len = -1;
     bool skip_if_none = false;
     bool skip = false;
 };
@@ -262,6 +264,12 @@ struct TypeField {
             alloc_metadata();
             metadata->js_name = _name;
             metadata->hash = PyObject_Hash(_name);
+        }
+
+        PyObject * const_len = PyObject_GetItem(field_metadata, __const_len);
+        if (const_len && PyLong_Check(const_len)) {
+            alloc_metadata();
+            metadata->const_len = PyLong_AsLong(const_len);
         }
     }
 
@@ -564,16 +572,21 @@ PyObject * check_field(PyObject * key, PyObject * value, int index) {
     TypeField * field = (*type->fields_map)[PyObject_Hash(key)];
 
     if (field->metadata) {
-        if (field->metadata->skip) {
-            return nullptr;
-        }
+        if (field->metadata->skip) { return nullptr; }
 
-        if (field->metadata->skip_if_none && value == Py_None) {
-            return nullptr;
-        }
+        if (field->metadata->skip_if_none && value == Py_None) { return nullptr; }
 
-        if (field->metadata->js_name) {
-            return field->metadata->js_name;
+        if (field->metadata->js_name) { return field->metadata->js_name; }
+
+        if (field->metadata->const_len != -1) {
+            if (PyObject_Length(value) != field->metadata->const_len) {
+                PyErr_Format(PyExc_TypeError,
+                        "field len %d != %d const len",
+                        PyObject_Length(value),
+                        field->metadata->const_len);
+                return nullptr;
+            }
+
         }
     }
 
@@ -671,9 +684,7 @@ inline bool check(size_t type_value, Base_type * sub, PyObject * val) {
         }
 
     } else if (type_value == DICT_ && sub->type == DICT_) {
-        if (sub->size != 2) {
-            return false;
-        }
+        if (sub->size != 2) return false;
 
         Base_type *sub_key = sub->types;
         Base_type *sub_value = sub->types + 1;
@@ -720,6 +731,11 @@ inline bool check_field_obj(PyObject * key, PyObject * value, PyType * type, PyO
                 PyDict_SetItem(obj, field->name_, value);
                 PyDict_DelItem(obj, key);
             }
+            if (field->metadata) {
+                if (field->metadata->const_len != PyObject_Length(value)) {
+                    return false;
+                }
+            }
             return true;
 
         } else if (field->subtypes) {
@@ -727,6 +743,11 @@ inline bool check_field_obj(PyObject * key, PyObject * value, PyType * type, PyO
                 if (field->hash_name != hash_key) {
                     PyDict_SetItem(obj, field->name_, value);
                     PyDict_DelItem(obj, key);
+                }
+                if (field->metadata) {
+                    if (field->metadata->const_len != PyObject_Length(value)) {
+                        return false;
+                    }
                 }
                 return true;
             }
@@ -736,8 +757,12 @@ inline bool check_field_obj(PyObject * key, PyObject * value, PyType * type, PyO
                 PyDict_SetItem(obj, field->name_, value);
                 PyDict_DelItem(obj, key);
             }
+            if (field->metadata) {
+                if (field->metadata->const_len != PyObject_Length(value)) {
+                    return false;
+                }
+            }
             return true;
-
         }
     }
 

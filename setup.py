@@ -1,16 +1,16 @@
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 
 
 arg_compile = [
     '-O2'
 ]
 
-
 module1 = Extension('fastjs',
                     sources=['src/fastjs.cpp',
                              'src/validator.cpp'],
                     include_dirs=["./src", "./ryu"],
-                    extra_compile_args=arg_compile)
+                    extra_compile_args=arg_compile,
+                    extra_link_args=["-lstdc++", "-lm"],)
 
 with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
