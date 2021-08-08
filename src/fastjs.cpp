@@ -277,7 +277,7 @@ static Cache * mem_cache_string_ = nullptr;
 
 
 int check_js_dataclass(PyObject * v);
-PyObject * check_field(PyObject * key, PyObject * value, int i);
+PyObject * check_field(PyObject * key, PyObject * value, int i, int & error_handler);
 PyObject * check_object(PyObject * obj);
 
 
@@ -292,11 +292,9 @@ protected:
     bool non_string_key = false;
     bool using_cache_string = false;
 
-    bool is_error = false;
-
-    PyObject * set_error(const char * msg) {
+    int set_error(const char * msg) {
         PyErr_Format(PyExc_ValueError, "%s", msg);
-        return nullptr;
+        return 1;
     }
 
     inline void realloc_mem(const size_t n) {
@@ -492,7 +490,7 @@ protected:
         }
     }
 
-    virtual void add_list(PyObject * s) {
+    virtual int add_list(PyObject * s) {
         Py_ssize_t len, i = 0;
 
         len = PyList_Size(s);
@@ -500,14 +498,18 @@ protected:
 
         add_char(open_list);
         while (i < len) {
-            main_dump(PyList_GetItem(s, i));
+            if (main_dump(PyList_GetItem(s, i))) {
+                return 1;
+            }
             add_char(comma);
             ++i;
         }
         *(str - 1) = close_list;
+
+        return 0;
     }
 
-    virtual void add_tuple(PyObject * s) {
+    virtual int add_tuple(PyObject * s) {
         Py_ssize_t len, i = 0;
 
         len = PyTuple_Size(s);
@@ -515,14 +517,18 @@ protected:
 
         add_char(open_list);
         while (i < len) {
-            main_dump(PyTuple_GetItem(s, i));
+            if (main_dump(PyTuple_GetItem(s, i))) {
+                return 1;
+            }
             add_char(comma);
             ++i;
         }
         *(str - 1) = close_list;
+
+        return 0;
     }
 
-    virtual void add_dict(PyObject * s) {
+    virtual int add_dict(PyObject * s) {
         PyObject *key, *value;
         Py_ssize_t i = 0, len_s = 0;
 
@@ -530,15 +536,21 @@ protected:
 
         add_char(open_obj);
         while (PyDict_Next(s, &i, &key, &value)) {
-            add_obj_key(key);
+            if (add_obj_key(key)) {
+                return 1;
+            }
             add_char(colon);
-            main_dump(value);
+            if (main_dump(value)) {
+                return 1;
+            }
             add_char(comma);
         }
         *(str - 1) = close_obj;
+
+        return 0;
     }
 
-    virtual void add_class(PyObject * s, int js_dataclass_index = -1) {
+    virtual int add_class(PyObject * s, int js_dataclass_index = -1) {
         PyObject *key, *value;
         Py_ssize_t i = 0;
 
@@ -548,12 +560,18 @@ protected:
         while (PyDict_Next(s, &i, &key, &value)) {
             obj_class_checker;
 
-            add_obj_key(key);
+            if (add_obj_key(key)) {
+                return 1;
+            }
             add_char(colon);
-            main_dump(value);
+            if (main_dump(value)) {
+                return 1;
+            }
             add_char(comma);
         }
         *(str - 1) = close_obj;
+
+        return 0;
     }
 
     template <class T>
@@ -611,7 +629,7 @@ protected:
         return out - s;
     }
 
-    virtual inline void add_string_with_cache(PyObject * s) {
+    virtual inline int add_string_with_cache(PyObject * s) {
         size_t cache_index = 0, size = 0;
         Cache * cache = nullptr;
 
@@ -628,11 +646,14 @@ protected:
             check(cache->size());
             memcpy(str, cache->ptr, cache->size() * sizeof(Type));
             str += cache->size();
-            return;
+            return 0;
         }
 
         Type * start = str;
-        size = add_string(s);
+
+        if (add_string(s, size)) {
+            return 1;
+        }
 
         if (size * sizeof(Type) < MAX_SIZE_CACHE_STR) {
             memcpy(cache->ptr, start, size * sizeof(Type));
@@ -640,35 +661,33 @@ protected:
             cache->set_kind(sizeof(Type));
             cache->hash = hash;
         }
+
+        return 0;
     }
 
-    virtual inline size_t add_string(PyObject * s) {
+    virtual inline int add_string(PyObject * s, size_t & len) {
         size_t kind = PyUnicode_KIND(s);
         size_t size = PyUnicode_GetLength(s);
         check(size * kind * 2);
 
-        size_t len = 0;
         if (kind == 1) {
             const uint8_t * source = PyUnicode_1BYTE_DATA(s);
             if (source == nullptr) {
-                PyErr_SetString(PyExc_RuntimeError, "not valid utf-8");
-                return 0;
+                return set_error("not valid utf-8");
             }
             len = string_serialization8_16<uint8_t>(str, source);
 
         } else if (kind == 2) {
             const uint16_t * source = PyUnicode_2BYTE_DATA(s);
             if (source == nullptr) {
-                PyErr_SetString(PyExc_RuntimeError, "not valid utf-16");
-                return 0;
+                return set_error("not valid utf-16");
             }
             len = string_serialization8_16<uint16_t>(str, source);
 
         } else if (kind == 4) {
             const uint32_t * source = PyUnicode_4BYTE_DATA(s);
             if (source == nullptr) {
-                PyErr_SetString(PyExc_RuntimeError, "not valid utf-32");
-                return 0;
+                return set_error("not valid utf-32");
             }
             if (sizeof(Type) == 4) {
                 len = string_serialization8_16<uint32_t>(str, source);
@@ -679,18 +698,20 @@ protected:
 
         str += len;
 
-        return len;
+        return 0;
     }
 
-    inline void add_obj_key(PyObject * s) {
+    inline int add_obj_key(PyObject * s) {
         if (PyUnicode_Check(s)) {
             if (using_cache_string) {
-                add_string_with_cache(s);
+                return add_string_with_cache(s);
             } else {
-                add_string(s);
+                size_t i = 0;
+                return add_string(s, i);
             }
         } else if (non_string_key) {
             add_char(quot);
+
             if (PyBool_Check(s)) {
                 add_bool(s);
             }
@@ -702,12 +723,17 @@ protected:
             }
             else if (s == Py_None) {
                 add_null();
+
             } else {
-                PyErr_SetString(PyExc_RuntimeError, "non serealisebl type");
+                return set_error("non serealisebl type");
             }
+
             add_char(quot);
+
+            return 0;
+
         } else {
-            PyErr_SetString(PyExc_RuntimeError, "key need be str");
+            return set_error("key need be str");
         }
     }
 
@@ -736,12 +762,13 @@ protected:
         }
     }
 
-    void main_dump(PyObject * o) {
+    int main_dump(PyObject * o) {
         if (PyUnicode_Check(o)) {
             if (using_cache_string) {
-                add_string_with_cache(o);
+                return add_string_with_cache(o);
             } else {
-                add_string(o);
+                size_t i = 0;
+                return add_string(o, i);
             }
         }
         else if (PyBool_Check(o)) {
@@ -754,29 +781,34 @@ protected:
             add_float(o);
         }
         else if (PyList_Check(o)) {
-            add_list(o);
+            return add_list(o);
         }
         else if (PyDict_Check(o)) {
-            add_dict(o);
+            return add_dict(o);
         }
         else if (o == Py_None) {
             add_null();
         }
         else if (PyObject_HasAttr(o, __dict__) && !(PyFunction_Check(o) || PyMethod_Check(o))) {
             PyObject * d = PyObject_GenericGetDict(o, nullptr);
-            add_class(d, check_js_dataclass(o));
+            return add_class(d, check_js_dataclass(o));
         }
         else if (PyTuple_Check(o)) {
-            add_tuple(o);
+            return add_tuple(o);
         }
         else {
-            PyErr_SetString(PyExc_RuntimeError, "not dumped type");
+            return set_error("not dumped type");
         }
+
+        return 0;
     }
 
 public:
     virtual inline PyObject * dump(PyObject * o) {
-        main_dump(o);
+        if (main_dump(o)) {
+            return nullptr;
+        }
+
         return PyUnicode_FromKindAndData(sizeof(Type), start_str, str - start_str);
     }
 
@@ -839,7 +871,7 @@ protected:
         indent_depth -= indent_size;
     }
 
-    void add_list(PyObject * s) override {
+    int add_list(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -854,14 +886,18 @@ protected:
                 add_char(comma);
                 indent();
             } else { first = false; }
-            main_dump(PyList_GetItem(s, i++));
+            if (main_dump(PyList_GetItem(s, i++))) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_list);
+
+        return 0;
     }
 
-    void add_tuple(PyObject * s) override {
+    int add_tuple(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -876,14 +912,18 @@ protected:
                 add_char(comma);
                 indent();
             } else { first = false; }
-            main_dump(PyTuple_GetItem(s, i++));
+            if (main_dump(PyTuple_GetItem(s, i++))) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_list);
+
+       return 0;
     }
 
-    void add_dict(PyObject * s) override {
+    int add_dict(PyObject * s) override {
         PyObject *key, *value;
         Py_ssize_t i = 0, len_s = 0;
         bool first = true;
@@ -898,17 +938,23 @@ protected:
                 add_char(comma);
                 indent();
             } else { first = false; }
-            add_obj_key(key);
+            if (add_obj_key(key)) {
+                return 1;
+            }
             add_char(colon);
             add_char(space);
-            main_dump(value);
+            if (main_dump(value)) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_obj);
+
+        return 0;
     }
 
-    void add_class(PyObject * s, int js_dataclass_index = -1) override {
+    int add_class(PyObject * s, int js_dataclass_index = -1) override {
         PyObject *key, *value;
         Py_ssize_t i = 0;
         bool first = true;
@@ -926,14 +972,20 @@ protected:
                 indent();
             } else { first = false; }
 
-            add_obj_key(key);
+            if (add_obj_key(key)) {
+                return 1;
+            }
             add_char(colon);
             add_char(space);
-            main_dump(value);
+            if (main_dump(value)) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_obj);
+
+        return 0;
     }
 
 public:
@@ -946,7 +998,7 @@ public:
 
 class dumper_bytes : public BaseDump<uint8_t> {
 protected:
-    inline size_t add_string(PyObject * s)
+    inline int add_string(PyObject * s, size_t & len)
     override
     {
         size_t size = PyUnicode_GetLength(s);
@@ -956,14 +1008,14 @@ protected:
 
         const uint8_t * source = (const uint8_t *)PyUnicode_AsUTF8(s);
         if (source == nullptr) {
-            PyErr_SetString(PyExc_RuntimeError, "not valid utf-8");
-            return -1;
+            return set_error("not valid utf-8");
         }
 
-        size_t len = string_serialization8_16<uint8_t>(str, source);
+        len = string_serialization8_16<uint8_t>(str, source);
 
         str += len;
-        return len;
+
+        return 0;
     }
 
     inline void add_null() override {
@@ -1108,7 +1160,9 @@ protected:
 
 public:
     inline PyObject * dump(PyObject * o) override {
-        main_dump(o);
+        if (main_dump(o)) {
+            return nullptr;
+        }
         return PyBytes_FromStringAndSize((const char *)start_str, str - start_str);
     }
 
@@ -1149,7 +1203,7 @@ class dumper_indent_bytes : public dumper_bytes {
         indent_depth -= indent_size;
     }
 
-    void add_list(PyObject * s) override {
+    int add_list(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -1164,14 +1218,18 @@ class dumper_indent_bytes : public dumper_bytes {
                 add_char(comma);
                 indent();
             } else { first = false; }
-            main_dump(PyList_GetItem(s, i++));
+            if (main_dump(PyList_GetItem(s, i++))) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_list);
+
+        return 0;
     }
 
-    void add_tuple(PyObject * s) override {
+    int add_tuple(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -1186,19 +1244,23 @@ class dumper_indent_bytes : public dumper_bytes {
                 add_char(comma);
                 indent();
             } else { first = false; }
-            main_dump(PyTuple_GetItem(s, i++));
+            if (main_dump(PyTuple_GetItem(s, i++))) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_list);
+
+        return 0;
     }
 
-    void add_dict(PyObject * s) override {
+    int add_dict(PyObject * s) override {
         PyObject *key, *value;
         Py_ssize_t i = 0, len_s = 0;
         bool first = true;
 
-        check((PyDict_Size(s) + indent_depth + 4) * 14);
+        check((PyDict_Size(s) + indent_depth + 4) * 16);
 
         add_char(open_obj);
         inc_indent();
@@ -1208,17 +1270,23 @@ class dumper_indent_bytes : public dumper_bytes {
                 add_char(comma);
                 indent();
             } else { first = false; }
-            add_obj_key(key);
+            if (add_obj_key(key)) {
+                return 1;
+            }
             add_char(colon);
             add_char(space);
-            main_dump(value);
+            if (main_dump(value)) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_obj);
+
+        return 0;
     }
 
-    void add_class(PyObject * s, int js_dataclass_index = -1) override {
+    int add_class(PyObject * s, int js_dataclass_index = -1) override {
         PyObject *key, *value;
         Py_ssize_t i = 0;
         bool first = true;
@@ -1236,14 +1304,20 @@ class dumper_indent_bytes : public dumper_bytes {
                 indent();
             } else { first = false; }
 
-            add_obj_key(key);
+            if (add_obj_key(key)) {
+                return 1;
+            }
             add_char(colon);
             add_char(space);
-            main_dump(value);
+            if (main_dump(value)) {
+                return 1;
+            }
         }
         dec_indent();
         indent();
         add_char(close_obj);
+
+        return 0;
     }
 
 
@@ -1817,7 +1891,7 @@ static PyObject * loads(PyObject *self, PyObject *args) {
         parser_bytes p = val;
         return p.pars();
     } else {
-        PyErr_SetString(PyExc_RuntimeError, "error type, only 'str' or 'bytes'");
+        PyErr_SetString(PyExc_ValueError, "error type, only 'str' or 'bytes'");
         return nullptr;
     }
 }

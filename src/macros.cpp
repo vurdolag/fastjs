@@ -34,7 +34,9 @@
     const char * c = PyUnicode_AsUTF8(key);                         \
     if (PyUnicode_GetLength(key) > 1 && *c == ddf) continue;        \
     if (PyFunction_Check(value) || PyMethod_Check(value)) continue; \
-    key = check_field(key, value, js_dataclass_index);              \
+    int error_handler = 0;\
+    key = check_field(key, value, js_dataclass_index, error_handler);\
+    if (error_handler) return 1;\
     if (!key) continue
 
 

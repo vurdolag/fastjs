@@ -562,8 +562,9 @@ int check_js_dataclass(PyObject * v) {
 }
 
 
-PyObject * check_field(PyObject * key, PyObject * value, int index) {
+PyObject * check_field(PyObject * key, PyObject * value, int index, int & error_handler) {
     if (index < 0) return key;
+
 
     PyType * type = get_type(index);
 
@@ -580,6 +581,7 @@ PyObject * check_field(PyObject * key, PyObject * value, int index) {
 
         if (field->metadata->const_len != -1) {
             if (PyObject_Length(value) != field->metadata->const_len) {
+                error_handler = 1;
                 PyErr_Format(PyExc_TypeError,
                         "field len %d != %d const len",
                         PyObject_Length(value),
