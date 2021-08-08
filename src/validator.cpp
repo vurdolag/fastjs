@@ -7,7 +7,7 @@ using namespace std;
 
 
 PyObject * __origin__ = PyUnicode_FromString("__origin__");
-PyObject * __dict__ = PyUnicode_FromString("__dict__");
+extern PyObject * __dict__;
 PyObject * __args__ = PyUnicode_FromString("__args__");
 PyObject * __name__ = PyUnicode_FromString("__name__");
 PyObject * __dataclass_fields__ = PyUnicode_FromString("__dataclass_fields__");

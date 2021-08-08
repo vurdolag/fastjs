@@ -27,33 +27,21 @@
 //     size by about 10x (only one case, and only double) at the cost of some
 //     performance. Currently requires MSVC intrinsics.
 
-#include "ryu/ryu.h"
-
 #include <assert.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef RYU_DEBUG
-#include <inttypes.h>
-#include <stdio.h>
-#endif
+#include "ryu/common.cpp"
+#include "ryu/digit_table.cpp"
+#include "ryu/d2s_intrinsics.cpp"
+#include "ryu/d2s_full_table.cpp"
 
-#include "ryu/common.h"
-#include "ryu/digit_table.h"
-#include "ryu/d2s_intrinsics.h"
-
-// Include either the small or the full lookup tables depending on the mode.
-#if defined(RYU_OPTIMIZE_SIZE)
-#include "ryu/d2s_small_table.h"
-#else
-#include "ryu/d2s_full_table.h"
-#endif
 
 #define DOUBLE_MANTISSA_BITS 52
 #define DOUBLE_EXPONENT_BITS 11
 #define DOUBLE_BIAS 1023
+
 
 static inline uint32_t decimalLength17(const uint64_t v) {
   // This is slightly faster than a loop.
@@ -451,7 +439,7 @@ static inline bool d2d_small_int(const uint64_t ieeeMantissa, const uint32_t iee
   return true;
 }
 
-int d2s_buffered_n(double f, char* result) {
+inline int d2s_buffered_n(double f, char * result) {
   // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
   const uint64_t bits = double_to_bits(f);
 

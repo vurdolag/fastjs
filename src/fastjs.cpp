@@ -1,5 +1,4 @@
 #include <Python.h>
-#include "ryu/d2s.c"
 #include "macros.cpp"
 
 
@@ -33,8 +32,10 @@ const uint32_t hex_ = '#';
 const uint32_t exc_ = '!';
 
 
+int d2s_buffered_n(double f, char* result);
 
-static size_t GetLenLong4(uint64_t v) {
+
+size_t GetLenLong4(uint64_t v) {
     if (v < 10000000000) {
         if (v < 10000000) {
             if (v < 10000) {
@@ -84,7 +85,7 @@ static size_t GetLenLong4(uint64_t v) {
 
 
 template<class T>
-static inline uint32_t HEX_TO_DEC(const T * str, size_t len) {
+inline uint32_t HEX_TO_DEC(const T * str, size_t len) {
     uint8_t k = 0;
     uint32_t s = 0;
 
@@ -172,28 +173,10 @@ inline size_t encode_unicode_character(char * buffer, const T ucs_character) {
 }
 
 
-static long double pow10_matrix[100] = {
-        0,
-        1.0e+1,
-        1.0e+2,
-        1.0e+3,
-        1.0e+4,
-        1.0e+5,
-        1.0e+6,
-        1.0e+7,
-        1.0e+8,
-        1.0e+9,
-        1.0e+10,
-        1.0e+11,
-        1.0e+12,
-        1.0e+13,
-        1.0e+14,
-        1.0e+15,
-        1.0e+16,
-        1.0e+17,
-        1.0e+18,
-        1.0e+19,
-        1.0e+20,
+long double pow10_matrix[100] = {0, 1.0e+1,  1.0e+2,  1.0e+3,  1.0e+4,  1.0e+5,
+                                    1.0e+6,  1.0e+7,  1.0e+8,  1.0e+9,  1.0e+10,
+                                    1.0e+11, 1.0e+12, 1.0e+13, 1.0e+14, 1.0e+15,
+                                    1.0e+16, 1.0e+17, 1.0e+18, 1.0e+19, 1.0e+20,
 };
 
 
@@ -203,18 +186,18 @@ struct char1 {
     uint8_t c3 = 0;
 };
 
-static const char1 * matrix = (char1 *)"000001002003004005006007008009010011012013014015016017018019020021022023024025026027028029030031032033034035036037038039040041042043044045046047048049050051052053054055056057058059060061062063064065066067068069070071072073074075076077078079080081082083084085086087088089090091092093094095096097098099100101102103104105106107108109110111112113114115116117118119120121122123124125126127128129130131132133134135136137138139140141142143144145146147148149150151152153154155156157158159160161162163164165166167168169170171172173174175176177178179180181182183184185186187188189190191192193194195196197198199200201202203204205206207208209210211212213214215216217218219220221222223224225226227228229230231232233234235236237238239240241242243244245246247248249250251252253254255256257258259260261262263264265266267268269270271272273274275276277278279280281282283284285286287288289290291292293294295296297298299300301302303304305306307308309310311312313314315316317318319320321322323324325326327328329330331332333334335336337338339340341342343344345346347348349350351352353354355356357358359360361362363364365366367368369370371372373374375376377378379380381382383384385386387388389390391392393394395396397398399400401402403404405406407408409410411412413414415416417418419420421422423424425426427428429430431432433434435436437438439440441442443444445446447448449450451452453454455456457458459460461462463464465466467468469470471472473474475476477478479480481482483484485486487488489490491492493494495496497498499500501502503504505506507508509510511512513514515516517518519520521522523524525526527528529530531532533534535536537538539540541542543544545546547548549550551552553554555556557558559560561562563564565566567568569570571572573574575576577578579580581582583584585586587588589590591592593594595596597598599600601602603604605606607608609610611612613614615616617618619620621622623624625626627628629630631632633634635636637638639640641642643644645646647648649650651652653654655656657658659660661662663664665666667668669670671672673674675676677678679680681682683684685686687688689690691692693694695696697698699700701702703704705706707708709710711712713714715716717718719720721722723724725726727728729730731732733734735736737738739740741742743744745746747748749750751752753754755756757758759760761762763764765766767768769770771772773774775776777778779780781782783784785786787788789790791792793794795796797798799800801802803804805806807808809810811812813814815816817818819820821822823824825826827828829830831832833834835836837838839840841842843844845846847848849850851852853854855856857858859860861862863864865866867868869870871872873874875876877878879880881882883884885886887888889890891892893894895896897898899900901902903904905906907908909910911912913914915916917918919920921922923924925926927928929930931932933934935936937938939940941942943944945946947948949950951952953954955956957958959960961962963964965966967968969970971972973974975976977978979980981982983984985986987988989990991992993994995996997998999";
+char1 * matrix = (char1 *)"000001002003004005006007008009010011012013014015016017018019020021022023024025026027028029030031032033034035036037038039040041042043044045046047048049050051052053054055056057058059060061062063064065066067068069070071072073074075076077078079080081082083084085086087088089090091092093094095096097098099100101102103104105106107108109110111112113114115116117118119120121122123124125126127128129130131132133134135136137138139140141142143144145146147148149150151152153154155156157158159160161162163164165166167168169170171172173174175176177178179180181182183184185186187188189190191192193194195196197198199200201202203204205206207208209210211212213214215216217218219220221222223224225226227228229230231232233234235236237238239240241242243244245246247248249250251252253254255256257258259260261262263264265266267268269270271272273274275276277278279280281282283284285286287288289290291292293294295296297298299300301302303304305306307308309310311312313314315316317318319320321322323324325326327328329330331332333334335336337338339340341342343344345346347348349350351352353354355356357358359360361362363364365366367368369370371372373374375376377378379380381382383384385386387388389390391392393394395396397398399400401402403404405406407408409410411412413414415416417418419420421422423424425426427428429430431432433434435436437438439440441442443444445446447448449450451452453454455456457458459460461462463464465466467468469470471472473474475476477478479480481482483484485486487488489490491492493494495496497498499500501502503504505506507508509510511512513514515516517518519520521522523524525526527528529530531532533534535536537538539540541542543544545546547548549550551552553554555556557558559560561562563564565566567568569570571572573574575576577578579580581582583584585586587588589590591592593594595596597598599600601602603604605606607608609610611612613614615616617618619620621622623624625626627628629630631632633634635636637638639640641642643644645646647648649650651652653654655656657658659660661662663664665666667668669670671672673674675676677678679680681682683684685686687688689690691692693694695696697698699700701702703704705706707708709710711712713714715716717718719720721722723724725726727728729730731732733734735736737738739740741742743744745746747748749750751752753754755756757758759760761762763764765766767768769770771772773774775776777778779780781782783784785786787788789790791792793794795796797798799800801802803804805806807808809810811812813814815816817818819820821822823824825826827828829830831832833834835836837838839840841842843844845846847848849850851852853854855856857858859860861862863864865866867868869870871872873874875876877878879880881882883884885886887888889890891892893894895896897898899900901902903904905906907908909910911912913914915916917918919920921922923924925926927928929930931932933934935936937938939940941942943944945946947948949950951952953954955956957958959960961962963964965966967968969970971972973974975976977978979980981982983984985986987988989990991992993994995996997998999";
 
 
-static PyObject * __dict__ = PyUnicode_FromString("__dict__");
+PyObject * __dict__ = PyUnicode_FromString("__dict__");
 
-static PyObject * __indent = PyUnicode_FromString("indent");
+PyObject * __indent = PyUnicode_FromString("indent");
 Py_hash_t __indent_hash = PyObject_Hash(__indent);
 
-static PyObject * __non_string_key = PyUnicode_FromString("non_string_key");
+PyObject * __non_string_key = PyUnicode_FromString("non_string_key");
 Py_hash_t __non_string_key_hash = PyObject_Hash(__non_string_key);
 
-static PyObject * __as_string = PyUnicode_FromString("as_string");
+PyObject * __as_string = PyUnicode_FromString("as_string");
 Py_hash_t __as_string_hash = PyObject_Hash(__as_string);
 
 
@@ -241,8 +224,8 @@ struct Null4_ {
 
 
 
-static void * mem_char_ = nullptr;
-static size_t mem_size_ = 1024 * 8;
+void * mem_char_ = nullptr;
+size_t mem_size_ = 1024 * 8;
 
 
 const size_t SIZE_CACHE = 1024;
@@ -272,7 +255,7 @@ struct Cache {
 };
 
 
-static Cache * mem_cache_string_ = nullptr;
+Cache * mem_cache_string_ = nullptr;
 
 
 
@@ -290,11 +273,13 @@ protected:
     size_t buffer_size = 0;
 
     bool non_string_key = false;
-    bool using_cache_string = false;
+    bool using_cache_string = true;
 
-    int set_error(const char * msg) {
+    bool has_error = false;
+
+    void set_error(const char * msg) {
         PyErr_Format(PyExc_ValueError, "%s", msg);
-        return 1;
+        has_error = true;
     }
 
     inline void realloc_mem(const size_t n) {
@@ -490,67 +475,54 @@ protected:
         }
     }
 
-    virtual int add_list(PyObject * s) {
+    virtual void add_list(PyObject * s) {
         Py_ssize_t len, i = 0;
 
         len = PyList_Size(s);
         check(len * 8);
 
-        add_char(open_list);
+        *str++ = open_list;
         while (i < len) {
-            if (main_dump(PyList_GetItem(s, i))) {
-                return 1;
-            }
-            add_char(comma);
-            ++i;
+            main_dump(PyList_GetItem(s, i++));
+            if (has_error) return;
+            *str++ = comma;
         }
         *(str - 1) = close_list;
-
-        return 0;
     }
 
-    virtual int add_tuple(PyObject * s) {
+    virtual void add_tuple(PyObject * s) {
         Py_ssize_t len, i = 0;
 
         len = PyTuple_Size(s);
         check(len * 8);
 
-        add_char(open_list);
+        *str++ = open_list;
         while (i < len) {
-            if (main_dump(PyTuple_GetItem(s, i))) {
-                return 1;
-            }
-            add_char(comma);
-            ++i;
+            main_dump(PyTuple_GetItem(s, i++));
+            if (has_error) return;
+            *str++ = comma;
         }
         *(str - 1) = close_list;
-
-        return 0;
     }
 
-    virtual int add_dict(PyObject * s) {
+    virtual void add_dict(PyObject * s) {
         PyObject *key, *value;
         Py_ssize_t i = 0, len_s = 0;
 
         check(PyDict_Size(s) * 14);
 
-        add_char(open_obj);
+        *str++ = open_obj;
         while (PyDict_Next(s, &i, &key, &value)) {
-            if (add_obj_key(key)) {
-                return 1;
-            }
-            add_char(colon);
-            if (main_dump(value)) {
-                return 1;
-            }
-            add_char(comma);
+            add_obj_key(key);
+            *str++ = colon;
+            main_dump(value);
+            if (has_error) return;
+            *str++ = comma;
         }
         *(str - 1) = close_obj;
-
-        return 0;
     }
 
-    virtual int add_class(PyObject * s, int js_dataclass_index = -1) {
+    virtual void add_class(PyObject * s, int js_dataclass_index = -1) {
         PyObject *key, *value;
         Py_ssize_t i = 0;
 
@@ -560,18 +532,13 @@ protected:
         while (PyDict_Next(s, &i, &key, &value)) {
             obj_class_checker;
 
-            if (add_obj_key(key)) {
-                return 1;
-            }
-            add_char(colon);
-            if (main_dump(value)) {
-                return 1;
-            }
-            add_char(comma);
+            add_obj_key(key);
+            *str++ = colon;
+            main_dump(value);
+            if (has_error) return;
+            *str++ = comma;
         }
         *(str - 1) = close_obj;
-
-        return 0;
     }
 
     template <class T>
@@ -629,7 +596,7 @@ protected:
         return out - s;
     }
 
-    virtual inline int add_string_with_cache(PyObject * s) {
+    virtual inline void add_string_with_cache(PyObject * s) {
         size_t cache_index = 0, size = 0;
         Cache * cache = nullptr;
 
@@ -646,13 +613,14 @@ protected:
             check(cache->size());
             memcpy(str, cache->ptr, cache->size() * sizeof(Type));
             str += cache->size();
-            return 0;
         }
 
         Type * start = str;
 
-        if (add_string(s, size)) {
-            return 1;
+        add_string(s, size);
+
+        if (has_error) {
+            return;
         }
 
         if (size * sizeof(Type) < MAX_SIZE_CACHE_STR) {
@@ -662,10 +630,10 @@ protected:
             cache->hash = hash;
         }
 
-        return 0;
+        return;
     }
 
-    virtual inline int add_string(PyObject * s, size_t & len) {
+    virtual inline void add_string(PyObject * s, size_t & len) {
         size_t kind = PyUnicode_KIND(s);
         size_t size = PyUnicode_GetLength(s);
         check(size * kind * 2);
@@ -697,11 +665,9 @@ protected:
         }
 
         str += len;
-
-        return 0;
     }
 
-    inline int add_obj_key(PyObject * s) {
+    inline void add_obj_key(PyObject * s) {
         if (PyUnicode_Check(s)) {
             if (using_cache_string) {
                 return add_string_with_cache(s);
@@ -710,7 +676,7 @@ protected:
                 return add_string(s, i);
             }
         } else if (non_string_key) {
-            add_char(quot);
+            *str++ = quot;
 
             if (PyBool_Check(s)) {
                 add_bool(s);
@@ -728,9 +694,7 @@ protected:
                 return set_error("non serealisebl type");
             }
 
-            add_char(quot);
-
-            return 0;
+            *str++ = quot;
 
         } else {
             return set_error("key need be str");
@@ -762,7 +726,7 @@ protected:
         }
     }
 
-    int main_dump(PyObject * o) {
+    void main_dump(PyObject * o) {
         if (PyUnicode_Check(o)) {
             if (using_cache_string) {
                 return add_string_with_cache(o);
@@ -799,16 +763,12 @@ protected:
         else {
             return set_error("not dumped type");
         }
-
-        return 0;
     }
 
 public:
     virtual inline PyObject * dump(PyObject * o) {
-        if (main_dump(o)) {
-            return nullptr;
-        }
-
+        main_dump(o);
+        if (has_error) return nullptr;
         return PyUnicode_FromKindAndData(sizeof(Type), start_str, str - start_str);
     }
 
@@ -871,7 +831,7 @@ protected:
         indent_depth -= indent_size;
     }
 
-    int add_list(PyObject * s) override {
+    void add_list(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -886,18 +846,15 @@ protected:
                 add_char(comma);
                 indent();
             } else { first = false; }
-            if (main_dump(PyList_GetItem(s, i++))) {
-                return 1;
-            }
+            main_dump(PyList_GetItem(s, i++));
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_list);
-
-        return 0;
     }
 
-    int add_tuple(PyObject * s) override {
+    void add_tuple(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -912,18 +869,15 @@ protected:
                 add_char(comma);
                 indent();
             } else { first = false; }
-            if (main_dump(PyTuple_GetItem(s, i++))) {
-                return 1;
-            }
+            main_dump(PyTuple_GetItem(s, i++));
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_list);
-
-       return 0;
     }
 
-    int add_dict(PyObject * s) override {
+    void add_dict(PyObject * s) override {
         PyObject *key, *value;
         Py_ssize_t i = 0, len_s = 0;
         bool first = true;
@@ -938,23 +892,18 @@ protected:
                 add_char(comma);
                 indent();
             } else { first = false; }
-            if (add_obj_key(key)) {
-                return 1;
-            }
+            add_obj_key(key);
             add_char(colon);
             add_char(space);
-            if (main_dump(value)) {
-                return 1;
-            }
+            main_dump(value);
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_obj);
-
-        return 0;
     }
 
-    int add_class(PyObject * s, int js_dataclass_index = -1) override {
+    void add_class(PyObject * s, int js_dataclass_index = -1) override {
         PyObject *key, *value;
         Py_ssize_t i = 0;
         bool first = true;
@@ -972,20 +921,15 @@ protected:
                 indent();
             } else { first = false; }
 
-            if (add_obj_key(key)) {
-                return 1;
-            }
+            add_obj_key(key);
             add_char(colon);
             add_char(space);
-            if (main_dump(value)) {
-                return 1;
-            }
+            main_dump(value);
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_obj);
-
-        return 0;
     }
 
 public:
@@ -998,7 +942,7 @@ public:
 
 class dumper_bytes : public BaseDump<uint8_t> {
 protected:
-    inline int add_string(PyObject * s, size_t & len)
+    inline void add_string(PyObject * s, size_t & len)
     override
     {
         size_t size = PyUnicode_GetLength(s);
@@ -1011,11 +955,7 @@ protected:
             return set_error("not valid utf-8");
         }
 
-        len = string_serialization8_16<uint8_t>(str, source);
-
-        str += len;
-
-        return 0;
+        str += string_serialization8_16<uint8_t>(str, source);
     }
 
     inline void add_null() override {
@@ -1160,9 +1100,8 @@ protected:
 
 public:
     inline PyObject * dump(PyObject * o) override {
-        if (main_dump(o)) {
-            return nullptr;
-        }
+        main_dump(o);
+        if (has_error) return nullptr;
         return PyBytes_FromStringAndSize((const char *)start_str, str - start_str);
     }
 
@@ -1203,7 +1142,7 @@ class dumper_indent_bytes : public dumper_bytes {
         indent_depth -= indent_size;
     }
 
-    int add_list(PyObject * s) override {
+    void add_list(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -1218,18 +1157,15 @@ class dumper_indent_bytes : public dumper_bytes {
                 add_char(comma);
                 indent();
             } else { first = false; }
-            if (main_dump(PyList_GetItem(s, i++))) {
-                return 1;
-            }
+            main_dump(PyList_GetItem(s, i++));
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_list);
-
-        return 0;
     }
 
-    int add_tuple(PyObject * s) override {
+    void add_tuple(PyObject * s) override {
         Py_ssize_t len, i = 0;
         bool first = true;
 
@@ -1244,18 +1180,15 @@ class dumper_indent_bytes : public dumper_bytes {
                 add_char(comma);
                 indent();
             } else { first = false; }
-            if (main_dump(PyTuple_GetItem(s, i++))) {
-                return 1;
-            }
+            main_dump(PyTuple_GetItem(s, i++));
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_list);
-
-        return 0;
     }
 
-    int add_dict(PyObject * s) override {
+    void add_dict(PyObject * s) override {
         PyObject *key, *value;
         Py_ssize_t i = 0, len_s = 0;
         bool first = true;
@@ -1270,23 +1203,18 @@ class dumper_indent_bytes : public dumper_bytes {
                 add_char(comma);
                 indent();
             } else { first = false; }
-            if (add_obj_key(key)) {
-                return 1;
-            }
+            add_obj_key(key);
             add_char(colon);
             add_char(space);
-            if (main_dump(value)) {
-                return 1;
-            }
+            main_dump(value);
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_obj);
-
-        return 0;
     }
 
-    int add_class(PyObject * s, int js_dataclass_index = -1) override {
+    void add_class(PyObject * s, int js_dataclass_index = -1) override {
         PyObject *key, *value;
         Py_ssize_t i = 0;
         bool first = true;
@@ -1304,20 +1232,15 @@ class dumper_indent_bytes : public dumper_bytes {
                 indent();
             } else { first = false; }
 
-            if (add_obj_key(key)) {
-                return 1;
-            }
+            add_obj_key(key);
             add_char(colon);
             add_char(space);
-            if (main_dump(value)) {
-                return 1;
-            }
+            main_dump(value);
+            if (has_error) return;
         }
         dec_indent();
         indent();
         add_char(close_obj);
-
-        return 0;
     }
 
 
@@ -1862,7 +1785,6 @@ public:
         data_end = data + size_source_string;
     }
 };
-
 
 
 static PyObject * clear(PyObject *self, PyObject *args) {

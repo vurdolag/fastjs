@@ -17,9 +17,9 @@
 #ifndef RYU_COMMON_H
 #define RYU_COMMON_H
 
-#include <assert.h>
-#include <stdint.h>
-#include <string.h>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
 
 #if defined(_M_IX86) || defined(_M_ARM)
 #define RYU_32_BIT_PLATFORM

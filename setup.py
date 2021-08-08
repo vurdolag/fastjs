@@ -2,12 +2,17 @@ from setuptools import setup, Extension, find_packages
 
 
 arg_compile = [
-    '-O2'
-]
+    '-O2', "/std:c++17"]
 
 module1 = Extension('fastjs',
                     sources=['src/fastjs.cpp',
-                             'src/validator.cpp'],
+                             'src/validator.cpp',
+                             'src/ryu/common.cpp',
+                             'src/ryu/d2s.cpp',
+                             'src/ryu/d2s_full_table.cpp',
+                             'src/ryu/d2s_intrinsics.cpp',
+                             'src/ryu/digit_table.cpp'],
+
                     include_dirs=["./src", "./ryu"],
                     extra_compile_args=arg_compile,
                     extra_link_args=["-lstdc++", "-lm"],)

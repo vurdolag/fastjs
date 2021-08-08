@@ -36,7 +36,7 @@
     if (PyFunction_Check(value) || PyMethod_Check(value)) continue; \
     int error_handler = 0;\
     key = check_field(key, value, js_dataclass_index, error_handler);\
-    if (error_handler) return 1;\
+    if (error_handler) return;\
     if (!key) continue
 
 
