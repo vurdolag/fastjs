@@ -1,13 +1,12 @@
 
-#define str_serialization_unit                                      \
-    if (*source == slash || *source < hex_ ) {                      \
-        if (*source != space && *source != exc_) {                  \
-            if (*source == stop) break;                             \
-            *out++ = slash;                                         \
-            *out++ = char_check(*source++);                         \
-            continue;                                               \
-        }                                                           \
-    }                                                               \
+#define str_serialization_unit                                 \
+    if (*source <= quot || *source == slash) {                  \
+        if (source >= source_end) break; \
+        if (*source < space || *source == slash || *source == quot) {\
+            out += char_check(*source++, out);                  \
+            continue;                                           \
+        }                                                       \
+    }                                                           \
     *out++ = *source++
 
 
@@ -22,8 +21,6 @@
     if (*source < max_2_byte) {                                     \
         str_serialization_unit;                                     \
     } else {                                                        \
-        uint32_t h = 0;                                             \
-        uint32_t l = 0;                                             \
         convertUTF32ToUTF16(*source++, h, l);                       \
         _utf32toutf16(h);                                           \
         _utf32toutf16(l);                                           \
@@ -31,12 +28,11 @@
 
 
 #define obj_class_checker                                           \
-    const char * c = PyUnicode_AsUTF8(key);                         \
-    if (PyUnicode_GetLength(key) > 1 && *c == ddf) continue;        \
+    key_name = PyUnicode_AsUTF8(key);                               \
+    if (PyUnicode_GetLength(key) > 1 && *key_name == ddf) continue; \
     if (PyFunction_Check(value) || PyMethod_Check(value)) continue; \
-    int error_handler = 0;\
     key = check_field(key, value, js_dataclass_index, error_handler);\
-    if (error_handler) return;\
+    if (error_handler) return;                                      \
     if (!key) continue
 
 
@@ -78,9 +74,9 @@
         switch (*data) {                                            \
             case close_list:                                        \
             case close_obj:                                         \
-                return get_integer(is_float, is_negative, is_exponent);          \
+                return get_integer(is_float, is_negative, is_exponent);\
             case 'e':                                               \
-            case 'E': \
+            case 'E':                                               \
                  is_exponent = true;                                \
                  data++;                                            \
                  continue;                                          \
@@ -102,10 +98,10 @@
             case comma:                                             \
             case stop:                                              \
             case space:                                             \
-                return get_integer(is_float, is_negative, is_exponent);          \
+                return get_integer(is_float, is_negative, is_exponent);\
             default:                                                \
                 if (*data < space) {                                \
-                    return get_integer(is_float, is_negative, is_exponent);      \
+                    return get_integer(is_float, is_negative, is_exponent);\
                 } else {                                            \
                     return set_error("error token not integer");    \
                 }                                                   \
