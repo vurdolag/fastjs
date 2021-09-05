@@ -42,7 +42,6 @@
 #define DOUBLE_EXPONENT_BITS 11
 #define DOUBLE_BIAS 1023
 
-
 static inline uint32_t decimalLength17(const uint64_t v) {
   // This is slightly faster than a loop.
   // The average output length is 16.38 digits, so we check high-to-low.

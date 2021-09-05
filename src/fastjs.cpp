@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "macros.cpp"
+#include <iostream>
 
 
 using namespace std;
@@ -74,8 +75,10 @@ inline const size_t GetLenLong4(const uint64_t v) {
             }
             else if (v < 100000000000000000) {
                 return 17;
+            } else if (v < 1000000000000000000) {
+                return 18;
             }
-            return 18;
+            return 19;
         }
     }
 }
@@ -172,11 +175,27 @@ inline const size_t encode_unicode_character(char * buffer, const T ucs_characte
 }
 
 
-static const long double pow10_matrix[100] = {
+static const long double pow10_matrix[101] = {
                 0,  1.0e+1,  1.0e+2,  1.0e+3,  1.0e+4,  1.0e+5,
                     1.0e+6,  1.0e+7,  1.0e+8,  1.0e+9,  1.0e+10,
                     1.0e+11, 1.0e+12, 1.0e+13, 1.0e+14, 1.0e+15,
                     1.0e+16, 1.0e+17, 1.0e+18, 1.0e+19, 1.0e+20,
+                    1.0e+21, 1.0e+22, 1.0e+23, 1.0e+24, 1.0e+25,
+                    1.0e+26, 1.0e+27, 1.0e+28, 1.0e+29, 1.0e+30,
+                    1.0e+31, 1.0e+32, 1.0e+33, 1.0e+34, 1.0e+35,
+                    1.0e+36, 1.0e+37, 1.0e+38, 1.0e+39, 1.0e+40,
+                    1.0e+41, 1.0e+42, 1.0e+43, 1.0e+44, 1.0e+45,
+                    1.0e+46, 1.0e+47, 1.0e+48, 1.0e+49, 1.0e+50,
+                    1.0e+51, 1.0e+52, 1.0e+53, 1.0e+54, 1.0e+55,
+                    1.0e+56, 1.0e+57, 1.0e+58, 1.0e+59, 1.0e+60,
+                    1.0e+61, 1.0e+62, 1.0e+63, 1.0e+64, 1.0e+65,
+                    1.0e+66, 1.0e+67, 1.0e+68, 1.0e+69, 1.0e+70,
+                    1.0e+71, 1.0e+72, 1.0e+73, 1.0e+74, 1.0e+75,
+                    1.0e+76, 1.0e+77, 1.0e+78, 1.0e+79, 1.0e+80,
+                    1.0e+81, 1.0e+82, 1.0e+83, 1.0e+84, 1.0e+85,
+                    1.0e+86, 1.0e+87, 1.0e+88, 1.0e+89, 1.0e+90,
+                    1.0e+91, 1.0e+92, 1.0e+93, 1.0e+94, 1.0e+95,
+                    1.0e+96, 1.0e+97, 1.0e+98, 1.0e+99, 1.0e+100
 };
 
 
@@ -276,6 +295,41 @@ static const char simbols[93] = {
 };
 
 
+// error 0, stop 1, float 2, int 3, exp 4, exp sign 5
+
+static const char simbols_int[256] = {
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2
+        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, // 3
+        0, 0, 0, 5, 1, 5, 2, 0, 3, 3, // 4
+        3, 3, 3, 3, 3, 3, 3, 3, 0, 0, // 5
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 4, // 6
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 7
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8
+        0, 0, 0, 1, 0, 0, 0, 0, 0, 0, // 9
+        0, 4, 0, 0, 0, 0, 0, 0, 0, 0, // 10
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 11
+        0, 0, 0, 0, 0, 1, 0, 0, 0, 0, // 12
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 13
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 14
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 15
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 16
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 17
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 18
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 19
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 20
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 21
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 22
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 23
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 24
+        0, 0, 0, 0, 0, 0,             // 25
+
+};
+
+
+
+
 template<typename Type>
 class BaseDump {
 protected:
@@ -286,6 +340,9 @@ protected:
 
     size_t indent_size = 0;
     size_t indent_depth = 0;
+
+    size_t recursion_depth = 0;
+    size_t max_recursion_depth = 1024;
 
     bool non_string_key = false;
     bool using_cache_string = false;
@@ -316,16 +373,22 @@ protected:
     }
 
     void add_list_indent(PyObject * s) {
-        const size_t len = PyList_Size(s);
-        check((len + indent_depth + 4) * 12);
+        const size_t size = ((PyListObject *)s)->ob_base.ob_size;
 
         *str++ = open_list;
+        if (size == 0) {
+            *str++ = close_list;
+            return;
+        }
+
+        check((size + indent_depth + 4) * 12);
+
         inc_indent();
         indent();
 
         size_t i = 0;
-        while (i < len) {
-            if (i > 1) {
+        while (i < size) {
+            if (i > 0) {
                 *str++ = comma;
                 indent();
             }
@@ -339,16 +402,22 @@ protected:
     }
 
     void add_tuple_indent(PyObject * s) {
-        const size_t len = PyTuple_Size(s);
-        check((len + indent_depth + 4) * 12);
+        const size_t size = ((PyTupleObject *)s)->ob_base.ob_size;
 
         *str++ = open_list;
+        if (size == 0) {
+            *str++ = close_list;
+            return;
+        }
+
+        check((size + indent_depth + 4) * 12);
+
         inc_indent();
         indent();
 
         size_t i = 0;
-        while (i < len) {
-            if (i > 1) {
+        while (i < size) {
+            if (i > 0) {
                 *str++ = comma;
                 indent();
             }
@@ -363,9 +432,15 @@ protected:
 
     void add_dict_indent(PyObject * s) {
         PyObject *key, *value;
-        check((PyDict_Size(s) + indent_depth + 4) * 16);
+        const size_t size = PyDict_Size(s);
+        check((size + indent_depth + 4) * 16);
 
         *str++ = open_obj;
+        if (size == 0) {
+            *str++ = close_obj;
+            return;
+        }
+
         inc_indent();
         indent();
 
@@ -391,9 +466,15 @@ protected:
 
     void add_class_indent(PyObject * s, const int js_dataclass_index = -1) {
         PyObject *key, *value;
-        check((PyDict_Size(s) + indent_depth + 4) * 16);
+        const size_t size = PyDict_Size(s);
+        check((size + indent_depth + 4) * 16);
 
         *str++ = open_obj;
+        if (size == 0) {
+            *str++ = close_obj;
+            return;
+        }
+
         inc_indent();
         indent();
 
@@ -561,6 +642,7 @@ protected:
             if (v > 0) {
                 const char * I = "Infinity";
                 while(*I) *str++ = *I++;
+
             } else {
                 const char * I = "-Infinity";
                 while(*I) *str++ = *I++;
@@ -581,7 +663,7 @@ protected:
             return;
         }
 
-        if (v >= 1.0e16 || v <= 1.0e-15) {
+        if (v >= 1.0e14 || v <= 1.0e-5) {
             char buff[30];
             const size_t size = d2s_buffered_n(v, buff);
             for (int i = 0; i < size; i++) {
@@ -596,6 +678,8 @@ protected:
         *str++ = int_point;
 
         const char1 * c;
+
+
 
         for (int i = 3; i < len; i += 3) {
             size_t d = v * pow10_matrix[i];
@@ -619,12 +703,20 @@ protected:
     }
 
     void add_list(PyObject * s) {
-        const size_t len = PyList_Size(s);
-        check(len * 8);
+        const size_t size = ((PyListObject *)s)->ob_base.ob_size;
+
         *str++ = open_list;
+        if (size == 0) {
+            *str++ = close_list;
+           return;
+        }
+
+        check(size * 8);
+
+        PyObject * item = nullptr;
 
         size_t i = 0;
-        while (i < len) {
+        while (i < size) {
             main_dump(PyList_GetItem(s, i++));
             if (has_error) return;
             *str++ = comma;
@@ -634,12 +726,17 @@ protected:
     }
 
     void add_tuple(PyObject * s) {
-        const size_t len = PyList_Size(s);
-        check(len * 8);
+        const size_t size = ((PyTupleObject *)s)->ob_base.ob_size;
+
         *str++ = open_list;
+        if (size == 0) {
+            *str++ = close_list;
+            return;
+        }
+        check(size * 8 + 2);
 
         size_t i = 0;
-        while (i < len) {
+        while (i < size) {
             main_dump(PyTuple_GetItem(s, i++));
             if (has_error) return;
             *str++ = comma;
@@ -650,8 +747,15 @@ protected:
 
     void add_dict(PyObject * s) {
         PyObject *key, *value;
-        check(PyDict_Size(s) * 14);
+        const size_t size = PyDict_Size(s);
+
+        check(size * 14 + 2);
         *str++ = open_obj;
+
+        if (size == 0) {
+            *str++ = close_obj;
+            return;
+        }
 
         Py_ssize_t i = 0;
         while (PyDict_Next(s, &i, &key, &value)) {
@@ -667,8 +771,14 @@ protected:
 
     void add_class(PyObject * s, const int js_dataclass_index = -1) {
         PyObject *key, *value;
-        check(PyDict_Size(s) * 14);
+        const size_t size = PyDict_Size(s);
+        check(size * 14 + 2);
         *str++ = open_obj;
+
+        if (size == 0) {
+            *str++ = close_obj;
+            return;
+        }
 
         const char * key_name = nullptr;
         int error_handler = 0;
@@ -870,7 +980,7 @@ protected:
     inline void add_bool(PyObject * s) {
         check(7);
         if (s == Py_True) {
-            //*((True<Type> *)str) = True<Type>();
+            *((True<Type> *)str) = True<Type>();
             str += 4;
 
         } else {
@@ -880,7 +990,14 @@ protected:
     }
 
     virtual void main_dump(PyObject * o) {
-        if      (PyUnicode_Check(o)) {
+        if (recursion_depth > max_recursion_depth) {
+            has_error = true;
+            return set_error("Maximum recursion depth");
+        }
+
+        recursion_depth++;
+
+        if (PyUnicode_Check(o)) {
             if (!using_cache_string) {
                 size_t i = 0;
                 add_string(o, i);
@@ -890,34 +1007,45 @@ protected:
 
             }
         }
+
         else if (PyBool_Check(o)) {
             add_bool(o);
         }
+
         else if (PyLong_Check(o)) {
             add_int(o);
         }
+
         else if (PyFloat_Check(o)) {
             add_float(o);
         }
+
         else if (PyList_Check(o)) {
             add_list(o);
         }
+
         else if (PyDict_Check(o)) {
             add_dict(o);
         }
+
         else if (o == Py_None) {
             add_null();
         }
+
         else if (PyObject_HasAttr(o, __dict__) && !(PyFunction_Check(o) || PyMethod_Check(o))) {
             PyObject * d = PyObject_GenericGetDict(o, nullptr);
             add_class(d, check_js_dataclass(o));
         }
+
         else if (PyTuple_Check(o)) {
             add_tuple(o);
         }
+
         else {
             set_error("not dumped type");
         }
+
+        recursion_depth--;
     }
 
 public:
@@ -933,15 +1061,14 @@ public:
     }
 
     ~BaseDump() {
-        //if (mem_size_ > 1024 * 512) {
-        //    PyMem_RawFree(mem_char_);
-        //    mem_char_ = nullptr;
-        //}
-        //if (mem_size_ / (str - start_str) >= 4) {
-        //    mem_size_ = mem_size_ / 2;
-       // }
+        if (mem_size_ > 1024 * 256) {
+            PyMem_RawFree(mem_char_);
+            mem_char_ = nullptr;
+        }
+        if (mem_size_ / (str - start_str) >= 4) {
+            mem_size_ = mem_size_ / 2;
+        }
     }
-
 };
 
 
@@ -967,9 +1094,16 @@ public:
 };
 
 
-class dumper_indent : public dumper {
+class dumper_indent : public dumper__ {
 private:
     void main_dump(PyObject * o) override {
+        if (recursion_depth > max_recursion_depth) {
+            has_error = true;
+            return set_error("Maximum recursion depth");
+        }
+
+        recursion_depth++;
+
         if (PyUnicode_Check(o)) {
             if (!using_cache_string) {
                 size_t i = 0;
@@ -1008,6 +1142,8 @@ private:
         else {
             set_error("not dumped type");
         }
+
+        recursion_depth--;
     }
 
 public:
@@ -1016,7 +1152,6 @@ public:
         indent_size = _indent_size;
     }
 };
-
 
 
 class dumper_bytes : public BaseDump<uint8_t> {
@@ -1126,7 +1261,7 @@ protected:
             return;
         }
 
-        if (v >= 1.0e16 || v <= 1.0e-15) {
+        if (v >= 1.0e14 || v <= 1.0e-5) {
             str += d2s_buffered_n(v, (char *)str);
             return;
         }
@@ -1177,6 +1312,16 @@ protected:
         }
     }
 
+    inline void add_float_(PyObject * s)
+    //override
+    {
+        long double v = PyFloat_AsDouble(s);
+        check(30);
+
+    }
+
+
+
 
 public:
     inline PyObject * dump(PyObject * o) override {
@@ -1196,6 +1341,13 @@ public:
 class dumper_indent_bytes : public dumper_bytes {
 private:
     void main_dump(PyObject * o) override {
+        if (recursion_depth > max_recursion_depth) {
+            has_error = true;
+            return set_error("Maximum recursion depth");
+        }
+
+        recursion_depth++;
+
         if (PyUnicode_Check(o)) {
             if (!using_cache_string) {
                 size_t i = 0;
@@ -1234,6 +1386,8 @@ private:
         else {
             set_error("not dumped type");
         }
+
+        recursion_depth--;
     }
 
 public:
@@ -1256,7 +1410,14 @@ protected:
 
     size_t size_source_string = 0;
 
-    PyObject * set_error(const char * msg) const {
+    bool has_error = false;
+
+    PyObject * set_error(const char * msg) {
+        if (has_error) {
+            return nullptr;
+        } else {
+            has_error = true;
+        }
         PyErr_Format(PyExc_ValueError, "%s, char pos = %d", msg, data - data_start);
         return nullptr;
     }
@@ -1274,7 +1435,7 @@ protected:
         const Type * const end = str + len;
         int n = 0;
 
-        while (*str != int_point) {
+        while (*str >= int_0) {
             r = (r * 10.0) + (*str++ - int_0);
         }
 
@@ -1289,46 +1450,68 @@ protected:
         return r;
     }
 
-    inline const double fast_atod_and_exponent(const Type * str, const size_t len) const {
-        double r = 0.0;
+    inline const double add_exponent(double r, int e, bool sig) const {
+        if (!e) { return r; }
+
+        double exp = 0.0;
+        if (e <= 100) {
+            exp = pow10_matrix[e];
+        } else {
+            exp = pow(10.0, e);
+        }
+
+        if (sig) {
+            return r * exp;
+        } else {
+            return r / exp;
+        }
+    }
+
+    inline const double fast_atod_and_exponent(const Type * str, const size_t len, bool is_float) const {
+        double r = 0;
         double f = 0.0;
         const Type * const end = str + len;
         int n = 0;
 
-        while (*str != int_point) {
-            r = (r * 10.0) + (*str++ - int_0);
+        if (is_float) {
+            while (*str != '.') {
+                r = (r * 10.0) + (*str++ - int_0);
+            }
+
+            ++str;
+            while (*str <= '9') {
+                f = (f * 10.0) + (*str++ - int_0);
+                ++n;
+            }
+            r += f / pow10_matrix[n];
+
+        } else {
+            while (*str <= '9') {
+                r = (r * 10.0) + (*str++ - int_0);
+                n++;
+            }
         }
 
         ++str;
-        while (*str != 'e' && *str != 'E') {
-            f = (f * 10.0) + (*str++ - int_0);
-            ++n;
-        }
-        r += f / pow10_matrix[n];
-
-        ++str;
-        int e = 0;
-        if (*str == df) {
+        uint64_t e = 0;
+        if (*str == '-') {
             while (++str < end) {
                 e = e * 10 + (*str - int_0);
             }
-            r = r / pow10_matrix[e];
+            return add_exponent(r, e, false);
 
         } else if (*str == '+') {
             while (++str < end) {
                 e = e * 10 + (*str - int_0);
             }
-            r = r * pow10_matrix[e];
+            return add_exponent(r, e, true);
 
         } else {
             while (str < end) {
-                e = e * 10 + (*str - int_0);
-                str++;
+                e = e * 10 + (*str++ - int_0);
             }
-            r = r * pow10_matrix[e];
+            return add_exponent(r, e, true);
         }
-
-        return r;
     }
 
     inline const uint64_t fast_atoll(const Type * str, const size_t len) const {
@@ -1357,7 +1540,6 @@ protected:
 
         while (*data) {
             next_char_not_space();
-
             if (*data != close_obj) {
                 if (!first) {
                     if (*data == comma) {
@@ -1375,16 +1557,13 @@ protected:
                 return check_object(object);
             }
 
-            if (*data != quot) { return set_error("error start key obj token '\"'"); }
-
-            data++;
+            if (*data++ != quot) { return set_error("error start key obj token '\"'"); }
 
             key = str_parser();
             if (key == nullptr) { return key; }
 
             next_char_not_space();
-
-            if (*data != colon || *data == comma) { return set_error("error obj token ':'"); }
+            if (*data != colon) { return set_error("error obj token ':'"); }
 
             next_char_not_space();
             if (*data == comma) { return set_error("error obj token ','"); }
@@ -1394,6 +1573,7 @@ protected:
                 PyDict_SetItem(object, key, value);
                 Py_DECREF(value);
                 Py_DECREF(key);
+
             } else {
                 Py_DECREF(key);
                 return value;
@@ -1407,28 +1587,22 @@ protected:
         bool first = true;
 
         while (*data) {
+            next_char_not_space();
             if (*data != close_list) {
                 if (!first) {
                     if (*data == comma) {
                         next_char_not_space();
-
-                    } else {
-                        return set_error("error list token ','");
-                    }
-
+                        if (*data == close_list) { return set_error("error list token ','"); }
+                    } else { return set_error("error list token ','"); }
                 } else { first = false; }
-
-            } else {
-                return object;
-            }
+            } else { return object; }
 
             value = main_pars();
             if (value != nullptr) {
                 PyList_Append(object, value);
                 Py_DECREF(value);
-            } else { return value; }
 
-            next_char_not_space();
+            } else { return value; }
         }
         return set_error("error list token ']'");
     }
@@ -1437,7 +1611,7 @@ protected:
         return PyUnicode_FromKindAndData(kind_, buff, size);
     }
 
-    inline const uint32_t char_check(const Type ** source) const {
+    inline const uint32_t char_check(const Type ** source) {
         uint32_t v = 0;
         const Type * const p = *source;
 
@@ -1474,7 +1648,7 @@ protected:
 
     }
 
-    inline const uint32_t char_check_2_byte(const Type ** p) const {
+    inline const uint32_t char_check_2_byte(const Type ** p) {
         uint32_t v = char_check(p);
 
         const int c = (v << 10) - 0x35fdc00;
@@ -1486,15 +1660,16 @@ protected:
         return v;
     }
 
+    template<class T>
     inline PyObject * string_writer(
-            const uint32_t * buff_start,
-            uint32_t * buff,
+            const T * const buff_start,
+            T * buff,
             const Type * source,
             const size_t n
             ) {
 
         const Type * ptr = source;
-        const Type ** p = &ptr;
+        const Type ** const p = &ptr;
 
         while (true) {
             str_escape_pars_and_check(0);
@@ -1507,10 +1682,21 @@ protected:
             str_escape_pars_and_check(6);
             str_escape_pars_and_check(7);
 
-            buff += 8;
-            ptr += 8;
+            str_escape_pars_and_check(8);
+            str_escape_pars_and_check(9);
+            str_escape_pars_and_check(10);
+            str_escape_pars_and_check(11);
+
+            str_escape_pars_and_check(12);
+            str_escape_pars_and_check(13);
+            str_escape_pars_and_check(14);
+            str_escape_pars_and_check(15);
+
+            buff += 16;
+            ptr += 16;
         }
     }
+
 
     virtual PyObject * str_escape_parser(const size_t size) {
         if (mem_char_ == nullptr ) {
@@ -1525,10 +1711,10 @@ protected:
         const uint32_t * const buff_start = buff;
         const Type * target_str = find_str;
 
-        for (size_t x = 0; x < size; ++x) {
+        for (size_t x = 0; x < size; x++) {
             *buff++ = *target_str++;
         }
-        return string_writer(buff_start, buff, target_str, size);
+        return string_writer<uint32_t>(buff_start, buff, target_str, size);
     }
 
     virtual PyObject * str_parser() {
@@ -1564,46 +1750,76 @@ protected:
         }
     }
 
+    inline PyObject * get_big_int(const Type * str, size_t size) {
+        char * buff = (char *)PyMem_Malloc(size + 1);
+
+        for (int i = 0; i < size; i++) {
+            buff[i] = *str++;
+        }
+        buff[size] = 0;
+
+        PyObject * v = PyLong_FromString(buff, nullptr, 10);
+        PyMem_Free(buff);
+
+        return v;
+    }
+
     inline PyObject * get_integer(
             const bool is_float,
             const bool is_negative,
-            const bool is_exponent) {
-        size_t len = data - find_str;
+            const bool is_exponent,
+            const bool start_zero
+            ) {
+        size_t size = data - find_str;
         data--;
 
-        PyObject * obj = nullptr;
+        if (start_zero && !is_float && size > 1) {
+            return set_error("The number starts from zero");
+        }
 
-        if (!is_float) {
-            if (len < 10) {
-                long val = fast_atoi(find_str, len);
-                val = (!is_negative) ? val : -val;
-                obj = PyLong_FromLong(val);
+        if (!is_float && !is_exponent) {
+            PyObject * v = nullptr;
+
+            if (size < 10) {
+                long val = fast_atoi(find_str, size);
+                return PyLong_FromLong(((!is_negative) ? val : -val));
+
+            } else if (size <= 18) {
+                long long val = fast_atoll(find_str, size);
+                return PyLong_FromLongLong(((!is_negative) ? val : -val));
 
             } else {
-                long long val = fast_atoll(find_str, len);
-                val = (!is_negative) ? val : -val;
-                obj = PyLong_FromLongLong(val);
+                return get_big_int(find_str, size);
             }
 
         } else {
             if (!is_exponent) {
-                double val = fast_atod(find_str, len);
-                val = (!is_negative) ? val : -val;
-                obj = PyFloat_FromDouble(val);
+                double val = fast_atod(find_str, size);
+                return PyFloat_FromDouble(((!is_negative) ? val : -val));
 
             } else {
-                double val = fast_atod_and_exponent(find_str, len);
-                val = (!is_negative) ? val : -val;
-                obj = PyFloat_FromDouble(val);
+                if (size > 13 && !is_float) {
+                    PyObject * f = PyUnicode_FromStringAndSize((char *)find_str, size);
+                    Py_DECREF(f);
+                    return PyFloat_FromString(f);
+                }
+
+                double val = fast_atod_and_exponent(find_str, size, is_float);
+                return PyFloat_FromDouble(((!is_negative) ? val : -val));
             }
         }
-        return obj;
     }
 
     PyObject * int_parser(const bool is_negative) {
         bool is_float = false;
         bool is_exponent = false;
-        find_str = data;
+        bool start_zero = false;
+
+        if (*data == int_0) {
+            start_zero = true;
+        }
+
+        find_str = data++;
 
         while (true) {
             int_pars_and_check;
@@ -1625,6 +1841,44 @@ protected:
             int_pars_and_check;
             int_pars_and_check;
             int_pars_and_check;
+        }
+    }
+
+    PyObject * int_parser__(const bool is_negative) {
+        bool is_float = false;
+        bool is_exponent = false;
+        bool start_zero = false;
+
+        if (*data == int_0) {
+            start_zero = true;
+        }
+
+        find_str = data;
+
+        char v = 0;
+
+        while (true) {
+            int_parser_(0)
+            int_parser_(1)
+            int_parser_(2)
+            int_parser_(3)
+
+            int_parser_(4)
+            int_parser_(5)
+            int_parser_(6)
+            int_parser_(7)
+
+            int_parser_(8)
+            int_parser_(9)
+            int_parser_(10)
+            int_parser_(11)
+
+            int_parser_(12)
+            int_parser_(13)
+            int_parser_(14)
+            int_parser_(15)
+
+            data += 16;
         }
     }
 
@@ -1650,7 +1904,6 @@ protected:
                     case open_obj:
                         return obj_parser();
                     case open_list:
-                        data++;
                         return list_parser();
                     case js_true:
                         data += 3;
@@ -1679,14 +1932,14 @@ protected:
 
 
 public:
-    inline PyObject *pars() {
+    inline PyObject * pars() {
         PyObject * result = main_pars();
 
-        if (result == nullptr) return result;
+        if (result == nullptr || has_error) return nullptr;
 
         next_char_not_space();
 
-        if (*data) { return set_error("sintax error"); }
+        if (data < data_end) { return set_error("sintax error"); }
 
         return result;
     }
@@ -1700,6 +1953,12 @@ public:
 
     BaseParser() {}
 
+    ~BaseParser() {
+        if (mem_size_ > 1024 * 256) {
+            PyMem_RawFree(mem_char_);
+            mem_char_ = nullptr;
+        }
+    }
 };
 
 
@@ -1731,7 +1990,8 @@ public:
 
 class parser_bytes : public BaseParser<char> {
     inline PyObject * set_str(const void * buff, const size_t size, const int kind_) const
-    override {
+    override
+    {
         return PyUnicode_FromStringAndSize((const char *)buff, size);
     }
 
@@ -1771,7 +2031,9 @@ class parser_bytes : public BaseParser<char> {
         }
     }
 
-    PyObject * str_escape_parser(const size_t size) override {
+    PyObject * str_escape_parser(const size_t size)
+    override
+    {
         if (mem_char_ == nullptr ) {
             mem_char_ = PyMem_RawMalloc(mem_size_);
         }
@@ -1784,14 +2046,12 @@ class parser_bytes : public BaseParser<char> {
         const char * buff_start = buff;
         char * target_str = (char *)find_str;
 
-        for (size_t x = 0; x < size; ++x) {
-            *buff++ = *target_str++;
-        }
+        memcpy(buff, target_str, size);
+        buff += size;
+        target_str += size;
 
         return string_writer(buff_start, buff, target_str, size);
     }
-    
-    
 
 public:
     parser_bytes(PyObject * val) {
@@ -1820,9 +2080,26 @@ static PyObject * clear(PyObject *self, PyObject *args) {
 }
 
 
-static PyObject * loads(PyObject *self, PyObject *args) {
+static PyObject * test(PyObject *self, PyObject *args) {
     PyObject * val = PyTuple_GetItem(args, 0);
 
+    long double v = PyFloat_AsDouble(val);
+    const size_t r = (size_t)v;
+
+    const size_t _size = GetLenLong4(r);
+
+    char buff[30];
+
+    int size = d2s_buffered_n(v, buff);
+
+    cout << _size << " " << size << endl;
+    cout << buff << endl;
+
+    return PyUnicode_FromStringAndSize(buff + _size + 1, size - _size - 3);
+}
+
+
+inline PyObject * loads_(PyObject * val) {
     if (PyUnicode_Check(val)) {
         parser_string p;
         return p.pars(val);
@@ -1838,8 +2115,44 @@ static PyObject * loads(PyObject *self, PyObject *args) {
 }
 
 
+static PyObject * loads(PyObject *self, PyObject *args) {
+    PyObject * val = PyTuple_GetItem(args, 0);
+    if (!val) { return nullptr; }
+    return loads_(val);
+}
+
+
+static PyObject * load(PyObject *self, PyObject *args) {
+    PyObject * val = PyTuple_GetItem(args, 0);
+    if (!val) { return nullptr; }
+
+    if (!PyObject_HasAttrString (val, "read")) {
+        PyErr_Format (PyExc_TypeError, "error file open");
+        return nullptr;
+    }
+
+    PyObject * read_func = PyObject_GetAttrString(val, "read");
+
+    if (!PyCallable_Check(read_func)) {
+        Py_XDECREF(read_func);
+        PyErr_Format (PyExc_TypeError, "error file open");
+        return nullptr;
+    }
+
+    PyObject * file_data = PyObject_CallObject(read_func, nullptr);
+    Py_XDECREF(read_func);
+
+    if (!file_data) {
+        return nullptr;
+    }
+
+    return loads_(file_data);
+}
+
+
 static PyObject * dumps(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyObject * val = PyTuple_GetItem(args, 0);
+    if (!val) { return nullptr; }
 
     bool _non_string_key = false;
     bool as_string = false;
@@ -1880,7 +2193,8 @@ static PyObject * dumps(PyObject *self, PyObject *args, PyObject *kwargs) {
 
     } else {
         if (!indent) {
-            dumper d(_non_string_key);
+            //dumper d(_non_string_key);
+            dumper__ d(_non_string_key);
             return d.dump(val);
 
         } else {
@@ -1907,6 +2221,7 @@ PyObject * free(PyObject *self, PyObject *args);
 
 
 static PyMethodDef methods[] = {
+        { "test", (PyCFunction)test, METH_VARARGS,  "test" },
         { "free", (PyCFunction)free, METH_VARARGS,  "free" },
         //{ "print", (PyCFunction)print, METH_VARARGS,  "print" },
         { "clear", (PyCFunction)clear, METH_VARARGS,  "clear" },
@@ -1914,6 +2229,7 @@ static PyMethodDef methods[] = {
         { "dumps", (PyCFunction)dumps, METH_VARARGS | METH_KEYWORDS,  "dumps" },
         { "dumps_", (PyCFunction)dumps_, METH_VARARGS | METH_KEYWORDS,  "dumps_" },
         { "loads", (PyCFunction)loads, METH_VARARGS,  "loads" },
+        { "load", (PyCFunction)load, METH_VARARGS,  "load" },
         // Terminate the array with an object containing nulls.
         { nullptr, nullptr, 0, nullptr }
 };
