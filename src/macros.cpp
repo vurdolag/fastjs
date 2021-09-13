@@ -11,19 +11,6 @@
 
 
 
-#define str_serialization_utf_8                                 \
-    if (*source <= quot || *source == slash) {                  \
-        if (source >= source_end) break; \
-        if (*source < space || *source == slash || *source == quot) {\
-            out += char_check(*source++, out);                  \
-            continue;                                           \
-        }                                                       \
-    }                                                           \
-    out += encode_unicode_character<T>((char *)out, *source++)
-
-
-
-
 #define _utf32toutf16(_v)                                           \
     *out++ = slash;                                                 \
     *out++ = 'u';                                                   \
