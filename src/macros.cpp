@@ -10,6 +10,20 @@
     *out++ = *source++
 
 
+
+#define str_serialization_utf_8                                 \
+    if (*source <= quot || *source == slash) {                  \
+        if (source >= source_end) break; \
+        if (*source < space || *source == slash || *source == quot) {\
+            out += char_check(*source++, out);                  \
+            continue;                                           \
+        }                                                       \
+    }                                                           \
+    out += encode_unicode_character<T>((char *)out, *source++)
+
+
+
+
 #define _utf32toutf16(_v)                                           \
     *out++ = slash;                                                 \
     *out++ = 'u';                                                   \
@@ -41,7 +55,7 @@
     if (d[_n] == slash || d[_n] <= quot) {                          \
         if (d[_n] <= quot) {                                        \
             if (d[_n] < space) {                                    \
-                return set_error("error simbol");                   \
+                return set_error("error symbol");                   \
             }                                                       \
             if (d[_n] == quot) {                                    \
                 size = (d - d_start) + _n;                          \
@@ -59,7 +73,7 @@
     if (ptr[_n] == slash || ptr[_n] <= quot) {                          \
         if (ptr[_n] <= quot) {                                            \
             if (ptr[_n] < space) {                                        \
-                return set_error("error simbol");                       \
+                return set_error("error symbol");                       \
             }                                                           \
             if (ptr[_n] == quot) {                                        \
                 data += (ptr - source) + _n + n;                        \
@@ -123,7 +137,7 @@
 
 
 #define int_parser_(_n)                                         \
-    v = simbols_int[data[_n]];                              \
+    v = symbols_int[data[_n]];                              \
     if (v != 3) {                                               \
         if (v == 1) {                                           \
             data += _n;                                             \
@@ -147,7 +161,7 @@
     if (ptr[_n] == slash || ptr[_n] <= quot) {                              \
         if (ptr[_n] <= quot) {                                              \
             if (ptr[_n] < space) {                                          \
-                return set_error("error simbol");                           \
+                return set_error("error symbol");                           \
             }                                                               \
             if (ptr[_n] == quot) {                                          \
                 data += (ptr - source + _n + n);                            \

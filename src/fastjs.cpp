@@ -99,7 +99,7 @@ inline const uint32_t HEX_TO_DEC(const T * str, size_t len) {
             k = *str - 'A' + 10;
 
         } else {
-            PyErr_SetString(PyExc_RuntimeError, "error unicode simbol \\u0000");
+            PyErr_SetString(PyExc_RuntimeError, "error unicode symbol \\u0000");
             return 0;
         }
         s = (s << 4) + k;
@@ -108,7 +108,9 @@ inline const uint32_t HEX_TO_DEC(const T * str, size_t len) {
     return s;
 }
 
+
 static const char * const digits_ = "0123456789abcdef";
+
 
 template <typename T>
 inline void DEC_TO_HEX(const uint32_t w, T * buffer) {
@@ -281,7 +283,7 @@ PyObject * check_field(PyObject * key, PyObject * value, int i, int & error_hand
 PyObject * check_object(PyObject * obj);
 
 
-static const char simbols[93] = {
+static const char symbols[93] = {
           0,   0,   0,   0,   0,   0,   0,   0,  98, 116,
         110,   0, 102, 114,   0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -297,7 +299,7 @@ static const char simbols[93] = {
 
 // error 0, stop 1, float 2, int 3, exp 4, exp sign 5
 
-static const char simbols_int[256] = {
+static const char symbols_int[256] = {
         1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0
         1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2
@@ -373,7 +375,9 @@ protected:
     }
 
     void add_list_indent(PyObject * s) {
-        const size_t size = ((PyListObject *)s)->ob_base.ob_size;
+        PyListObject * list = (PyListObject *)s;
+
+        const size_t size = list->ob_base.ob_size;
 
         *str++ = open_list;
         if (size == 0) {
@@ -392,7 +396,7 @@ protected:
                 *str++ = comma;
                 indent();
             }
-            main_dump(PyList_GetItem(s, i++));
+            main_dump_indent(list->ob_item[i++]);
             if (has_error) return;
         }
 
@@ -402,7 +406,9 @@ protected:
     }
 
     void add_tuple_indent(PyObject * s) {
-        const size_t size = ((PyTupleObject *)s)->ob_base.ob_size;
+        PyTupleObject * tuple_ = (PyTupleObject *)s;
+
+        const size_t size = tuple_->ob_base.ob_size;
 
         *str++ = open_list;
         if (size == 0) {
@@ -421,7 +427,7 @@ protected:
                 *str++ = comma;
                 indent();
             }
-            main_dump(PyTuple_GetItem(s, i++));
+            main_dump_indent(tuple_->ob_item[i++]);
             if (has_error) return;
         }
 
@@ -432,7 +438,7 @@ protected:
 
     void add_dict_indent(PyObject * s) {
         PyObject *key, *value;
-        const size_t size = PyDict_Size(s);
+        const size_t size = ((PyDictObject *)s)->ma_used;
         check((size + indent_depth + 4) * 16);
 
         *str++ = open_obj;
@@ -445,7 +451,7 @@ protected:
         indent();
 
         Py_ssize_t i = 0;
-        while (PyDict_Next(s, &i, &key, &value)) {
+        while (_PyDict_Next(s, &i, &key, &value, nullptr)) {
             if (i > 1) {
                 *str++ = comma;
                 indent();
@@ -455,7 +461,7 @@ protected:
             *str++ = colon;
             *str++ = space;
 
-            main_dump(value);
+            main_dump_indent(value);
             if (has_error) return;
         }
 
@@ -466,7 +472,7 @@ protected:
 
     void add_class_indent(PyObject * s, const int js_dataclass_index = -1) {
         PyObject *key, *value;
-        const size_t size = PyDict_Size(s);
+        const size_t size = ((PyDictObject *)s)->ma_used;
         check((size + indent_depth + 4) * 16);
 
         *str++ = open_obj;
@@ -482,7 +488,7 @@ protected:
         int error_handler = 0;
 
         Py_ssize_t i = 0;
-        while (PyDict_Next(s, &i, &key, &value)) {
+        while (_PyDict_Next(s, &i, &key, &value, nullptr)) {
             obj_class_checker;
             if (i > 1) {
                 *str++ = comma;
@@ -491,7 +497,7 @@ protected:
             add_obj_key(key);
             *str++ = colon;
             *str++ = space;
-            main_dump(value);
+            main_dump_indent(value);
             if (has_error) return;
         }
 
@@ -502,11 +508,15 @@ protected:
 
 
     void set_error(const char * msg) {
+        if (has_error) {
+            return;
+        }
+
         PyErr_Format(PyExc_ValueError, "%s", msg);
         has_error = true;
     }
 
-    inline void realloc_mem(const size_t n) {
+    virtual inline void realloc_mem(const size_t n) {
         size_t old_pos = str - start_str;
         buffer_size = (buffer_size + n) * 2;
         buffer_size = (buffer_size / 1024 + 1) * 1024;
@@ -520,7 +530,7 @@ protected:
         end_str = start_str + (buffer_size / sizeof(Type));
     }
 
-    inline void init_cache_mem() {
+    void init_cache_mem() {
         if (using_cache_string && mem_cache_string_ == nullptr) {
             mem_cache_string_ = (Cache *)PyMem_RawMalloc(sizeof(Cache) * SIZE_CACHE);
             for (int i = 0; i < SIZE_CACHE; i++) {
@@ -529,7 +539,7 @@ protected:
         }
     }
 
-    inline void init_mem() {
+    virtual inline void init_mem() {
         if (mem_char_ == nullptr) {
             mem_char_ = PyMem_RawMalloc(mem_size_);
         }
@@ -553,7 +563,7 @@ protected:
     inline const size_t char_check(const uint32_t c, Type * out) const {
         *out++ = slash;
 
-        const uint32_t v = *(simbols + c);
+        const uint32_t v = *(symbols + c);
         if (v) {
             *out = v;
             return 2;
@@ -703,7 +713,9 @@ protected:
     }
 
     void add_list(PyObject * s) {
-        const size_t size = ((PyListObject *)s)->ob_base.ob_size;
+        PyListObject * list = (PyListObject *)s;
+
+        const size_t size = list->ob_base.ob_size;
 
         *str++ = open_list;
         if (size == 0) {
@@ -713,11 +725,9 @@ protected:
 
         check(size * 8);
 
-        PyObject * item = nullptr;
-
         size_t i = 0;
         while (i < size) {
-            main_dump(PyList_GetItem(s, i++));
+            main_dump(list->ob_item[i++]);
             if (has_error) return;
             *str++ = comma;
         }
@@ -726,7 +736,8 @@ protected:
     }
 
     void add_tuple(PyObject * s) {
-        const size_t size = ((PyTupleObject *)s)->ob_base.ob_size;
+        PyTupleObject * tuple_ = (PyTupleObject *)s;
+        const size_t size = tuple_->ob_base.ob_size;
 
         *str++ = open_list;
         if (size == 0) {
@@ -737,7 +748,7 @@ protected:
 
         size_t i = 0;
         while (i < size) {
-            main_dump(PyTuple_GetItem(s, i++));
+            main_dump(tuple_->ob_item[i++]);
             if (has_error) return;
             *str++ = comma;
         }
@@ -747,7 +758,7 @@ protected:
 
     void add_dict(PyObject * s) {
         PyObject *key, *value;
-        const size_t size = PyDict_Size(s);
+        const size_t size = ((PyDictObject *)s)->ma_used;
 
         check(size * 14 + 2);
         *str++ = open_obj;
@@ -758,7 +769,7 @@ protected:
         }
 
         Py_ssize_t i = 0;
-        while (PyDict_Next(s, &i, &key, &value)) {
+        while (_PyDict_Next(s, &i, &key, &value, nullptr)) {
             add_obj_key(key);
             *str++ = colon;
             main_dump(value);
@@ -771,7 +782,7 @@ protected:
 
     void add_class(PyObject * s, const int js_dataclass_index = -1) {
         PyObject *key, *value;
-        const size_t size = PyDict_Size(s);
+        const size_t size = ((PyDictObject *)s)->ma_used;
         check(size * 14 + 2);
         *str++ = open_obj;
 
@@ -784,7 +795,7 @@ protected:
         int error_handler = 0;
 
         Py_ssize_t i = 0;
-        while (PyDict_Next(s, &i, &key, &value)) {
+        while (_PyDict_Next(s, &i, &key, &value, nullptr)) {
             obj_class_checker;
 
             add_obj_key(key);
@@ -989,7 +1000,7 @@ protected:
         }
     }
 
-    virtual void main_dump(PyObject * o) {
+    void main_dump(PyObject * o) {
         if (recursion_depth > max_recursion_depth) {
             has_error = true;
             return set_error("Maximum recursion depth");
@@ -1007,40 +1018,31 @@ protected:
 
             }
         }
-
         else if (PyBool_Check(o)) {
             add_bool(o);
         }
-
         else if (PyLong_Check(o)) {
             add_int(o);
         }
-
         else if (PyFloat_Check(o)) {
             add_float(o);
         }
-
         else if (PyList_Check(o)) {
             add_list(o);
         }
-
         else if (PyDict_Check(o)) {
             add_dict(o);
         }
-
         else if (o == Py_None) {
             add_null();
         }
-
         else if (PyObject_HasAttr(o, __dict__) && !(PyFunction_Check(o) || PyMethod_Check(o))) {
             PyObject * d = PyObject_GenericGetDict(o, nullptr);
             add_class(d, check_js_dataclass(o));
         }
-
         else if (PyTuple_Check(o)) {
             add_tuple(o);
         }
-
         else {
             set_error("not dumped type");
         }
@@ -1048,55 +1050,7 @@ protected:
         recursion_depth--;
     }
 
-public:
-    virtual inline PyObject * dump(PyObject * o) {
-        main_dump(o);
-        if (has_error) return nullptr;
-        return PyUnicode_FromKindAndData(sizeof(Type), start_str, str - start_str);
-    }
-
-    BaseDump(){
-        init_mem();
-        init_cache_mem();
-    }
-
-    ~BaseDump() {
-        if (mem_size_ > 1024 * 256) {
-            PyMem_RawFree(mem_char_);
-            mem_char_ = nullptr;
-        }
-        if (mem_size_ / (str - start_str) >= 4) {
-            mem_size_ = mem_size_ / 2;
-        }
-    }
-};
-
-
-class dumper : public BaseDump<uint16_t> {
-
-public:
-    dumper(bool _non_string_key) {
-        non_string_key = _non_string_key;
-    }
-
-    dumper(){}
-};
-
-
-class dumper__ : public BaseDump<uint32_t> {
-
-public:
-    dumper__(bool _non_string_key) {
-        non_string_key = _non_string_key;
-    }
-
-    dumper__(){}
-};
-
-
-class dumper_indent : public dumper__ {
-private:
-    void main_dump(PyObject * o) override {
+    void main_dump_indent(PyObject * o) {
         if (recursion_depth > max_recursion_depth) {
             has_error = true;
             return set_error("Maximum recursion depth");
@@ -1147,15 +1101,120 @@ private:
     }
 
 public:
-    dumper_indent(bool _non_string_key, const size_t _indent_size) {
+    virtual inline PyObject * dump(PyObject * o) {
+        init_mem();
+        init_cache_mem();
+
+        if (!indent_size) {
+            main_dump(o);
+        } else {
+            main_dump_indent(o);
+        }
+        if (has_error) return nullptr;
+
+        return PyUnicode_FromKindAndData(sizeof(Type), start_str, str - start_str);
+    }
+
+
+    /*
+    ~BaseDump() {
+        if (mem_size_ > 1024 * 256) {
+            PyMem_RawFree(mem_char_);
+            mem_char_ = nullptr;
+        }
+        if (str > start_str && mem_size_ / (str - start_str) >= 4) {
+            mem_size_ = mem_size_ / 2;
+        }
+    }
+     */
+};
+
+
+class dumper : public BaseDump<uint32_t> {
+private:
+    uint32_t * buff = nullptr;
+
+    inline void realloc_mem(const size_t n)
+    override
+    {
+        size_t old_pos = str - start_str;
+        buffer_size = (buffer_size + n) * 2;
+
+        buff = (uint32_t *)PyMem_RawRealloc(buff, buffer_size * 4 + sizeof(size_t) * 6);
+
+        start_str = buff + sizeof(size_t) * 6;
+        str = start_str + old_pos;
+        end_str = start_str + buffer_size - 1;
+    }
+
+    inline void init_mem()
+    override
+    {
+        buffer_size = 1024;
+
+        buff = (uint32_t *)PyMem_RawMalloc(buffer_size * 4 + sizeof(size_t) * 6);
+
+        start_str = buff + sizeof(size_t) * 6;
+        str = start_str;
+        end_str = start_str + buffer_size - 1;
+    }
+
+
+
+public:
+    inline PyObject * dump(PyObject * o)
+    override
+    {
+        init_mem();
+        init_cache_mem();
+
+        if (!indent_size) {
+            main_dump(o);
+        } else {
+            main_dump_indent(o);
+        }
+        if (has_error) return nullptr;
+
+        PyUnicodeObject * v = (PyUnicodeObject *)PyUnicode_FromKindAndData(4, nullptr, 0);
+
+        PyUnicodeObject * u = (PyUnicodeObject *)buff;
+
+        uint8_t * vv = (uint8_t *)v;
+        uint8_t * uu = (uint8_t *)u;
+
+        for (int i = 0; i < sizeof(size_t) * 6; i++) {
+            *uu++ = *vv++;
+        }
+
+        u->_base._base.state.kind = 4;
+        u->_base._base.state.ready = 1;
+        u->_base._base.state.ascii = 1;
+        u->_base._base.state.compact = 1;
+        u->_base._base.state.interned = 0;
+
+        u->_base._base.length = str - start_str;
+        u->_base._base.ob_base.ob_refcnt = 1;
+
+        PyObject * s = (PyObject *)u;
+
+        return s;
+    }
+
+
+    dumper(bool _non_string_key, const size_t _indent_size) {
         non_string_key = _non_string_key;
         indent_size = _indent_size;
     }
+
+    dumper(){}
 };
+
 
 
 class dumper_bytes : public BaseDump<uint8_t> {
 protected:
+    PyBytesObject * buff = nullptr;
+
     inline void add_string(PyObject * s, size_t & len)
     override
     {
@@ -1172,7 +1231,7 @@ protected:
             size = PyUnicode_GetLength(s);
         }
 
-        if (!size) {
+        if (size == 0) {
             *str++ = quot;
             *str++ = quot;
             return;
@@ -1320,82 +1379,134 @@ protected:
 
     }
 
+    inline void realloc_mem(const size_t n)
+    override
+    {
+        size_t old_pos = str - start_str;
+        buffer_size = (buffer_size + n) * 2;
 
+        buff = (PyBytesObject *)PyObject_Realloc(buff,
+                buffer_size + buff->ob_base.ob_base.ob_type->tp_basicsize + 1);
+
+        start_str = (uint8_t *)buff->ob_sval;
+        str = start_str + old_pos;
+        end_str = start_str + buffer_size - 1;
+    }
+
+    inline void init_mem()
+    override
+    {
+        buffer_size = 1024;
+        buff = (PyBytesObject *)PyBytes_FromStringAndSize(nullptr, buffer_size);
+
+        start_str = (uint8_t *)buff->ob_sval;
+        str = start_str;
+        end_str = start_str + buffer_size;
+    }
 
 
 public:
-    inline PyObject * dump(PyObject * o) override {
-        main_dump(o);
+    inline PyObject * dump(PyObject * o)
+    override
+    {
+        init_mem();
+        init_cache_mem();
+
+        if (!indent_size) {
+            main_dump(o);
+        } else {
+            main_dump_indent(o);
+        }
         if (has_error) return nullptr;
-        return PyBytes_FromStringAndSize((const char *)start_str, str - start_str);
+
+        buff->ob_base.ob_size = str - start_str;
+
+        return (PyObject *)buff;
     }
 
-    dumper_bytes(bool _non_string_key) {
+    dumper_bytes(bool _non_string_key, const size_t _indent_size) {
         non_string_key = _non_string_key;
+        indent_size = _indent_size;
     }
 
     dumper_bytes() {}
 };
 
 
-class dumper_indent_bytes : public dumper_bytes {
+class dumper_string : public dumper_bytes {
 private:
-    void main_dump(PyObject * o) override {
-        if (recursion_depth > max_recursion_depth) {
-            has_error = true;
-            return set_error("Maximum recursion depth");
-        }
+    uint8_t * buff = nullptr;
 
-        recursion_depth++;
+    inline void realloc_mem(const size_t n)
+    override
+    {
+        size_t old_pos = str - start_str;
+        buffer_size = (buffer_size + n) * 2;
 
-        if (PyUnicode_Check(o)) {
-            if (!using_cache_string) {
-                size_t i = 0;
-                add_string(o, i);
+        buff = (uint8_t *)PyMem_RawRealloc(buff, buffer_size + sizeof(size_t) * 6);
 
-            } else {
-                add_string_with_cache(o);
-
-            }
-        }
-        else if (PyBool_Check(o)) {
-            add_bool(o);
-        }
-        else if (PyLong_Check(o)) {
-            add_int(o);
-        }
-        else if (PyFloat_Check(o)) {
-            add_float(o);
-        }
-        else if (PyList_Check(o)) {
-            add_list_indent(o);
-        }
-        else if (PyDict_Check(o)) {
-            add_dict_indent(o);
-        }
-        else if (o == Py_None) {
-            add_null();
-        }
-        else if (PyObject_HasAttr(o, __dict__) && !(PyFunction_Check(o) || PyMethod_Check(o))) {
-            PyObject * d = PyObject_GenericGetDict(o, nullptr);
-            add_class_indent(d, check_js_dataclass(o));
-        }
-        else if (PyTuple_Check(o)) {
-            add_tuple_indent(o);
-        }
-        else {
-            set_error("not dumped type");
-        }
-
-        recursion_depth--;
+        start_str = buff + sizeof(size_t) * 6;
+        str = start_str + old_pos;
+        end_str = start_str + buffer_size - 1;
     }
 
+    inline void init_mem()
+    override
+    {
+        buffer_size = 1024;
+
+        buff = (uint8_t *)PyMem_RawMalloc(buffer_size + sizeof(size_t) * 6);
+
+        start_str = buff + sizeof(size_t) * 6;
+        str = start_str;
+        end_str = start_str + buffer_size - 1;
+    }
+
+
 public:
-    dumper_indent_bytes(bool _non_string_key, const size_t _indent_size)  {
+    inline PyObject * dump(PyObject * o)
+    override
+    {
+        init_mem();
+        init_cache_mem();
+
+        if (!indent_size) {
+            main_dump(o);
+        } else {
+            main_dump_indent(o);
+        }
+        if (has_error) return nullptr;
+
+        PyUnicodeObject * v = (PyUnicodeObject *)PyUnicode_FromStringAndSize(nullptr, 0);
+
+        PyUnicodeObject * u = (PyUnicodeObject *)buff;
+
+        uint8_t * vv = (uint8_t *)v;
+        uint8_t * uu = (uint8_t *)u;
+
+        for (int i = 0; i < sizeof(size_t) * 6; i++) {
+            *uu++ = *vv++;
+        }
+
+        u->_base._base.state.kind = 1;
+        u->_base._base.state.ready = 1;
+        u->_base._base.state.ascii = 1;
+        u->_base._base.state.compact = 1;
+        u->_base._base.state.interned = 0;
+
+        u->_base._base.length = str - start_str;
+        u->_base._base.ob_base.ob_refcnt = 1;
+
+        PyObject * s = (PyObject *)u;
+
+        return s;
+    }
+
+
+    dumper_string(bool _non_string_key, const size_t _indent_size) {
         non_string_key = _non_string_key;
         indent_size = _indent_size;
     }
-
 };
 
 
@@ -1962,7 +2073,6 @@ public:
 };
 
 
-
 class parser_string {
 public:
     inline PyObject *pars(PyObject * val) {
@@ -1985,7 +2095,6 @@ public:
         return nullptr;
     }
 };
-
 
 
 class parser_bytes : public BaseParser<char> {
@@ -2060,6 +2169,8 @@ public:
         data_end = data + size_source_string;
     }
 };
+
+
 
 
 
@@ -2182,33 +2293,21 @@ static PyObject * dumps(PyObject *self, PyObject *args, PyObject *kwargs) {
     }
 
     if (!as_string) {
-        if (!indent) {
-            dumper_bytes d(_non_string_key);
-            return d.dump(val);
-
-        } else {
-            dumper_indent_bytes d(_non_string_key, indent);
-            return d.dump(val);
-        }
+        dumper_bytes d(_non_string_key, indent);
+        return d.dump(val);
 
     } else {
-        if (!indent) {
-            //dumper d(_non_string_key);
-            dumper__ d(_non_string_key);
-            return d.dump(val);
-
-        } else {
-            dumper_indent d(_non_string_key, indent);
-            return d.dump(val);
-        }
+        dumper_string d(_non_string_key, indent);
+        return d.dump(val);
     }
 }
 
 
 static PyObject * dumps_(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyObject * val = PyTuple_GetItem(args, 0);
+    if (!val) { return nullptr; }
 
-    dumper__ d;
+    dumper d;
     return d.dump(val);
 }
 
