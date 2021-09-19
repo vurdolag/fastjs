@@ -33,6 +33,7 @@ const uint32_t hex_ = '#';
 const uint32_t exc_ = '!';
 
 
+
 inline const size_t GetLenLong4(const uint64_t v) {
     if (v < 10000000000) {
         if (v < 10000000) {
@@ -177,6 +178,7 @@ inline const size_t encode_unicode_character(char * buffer, const T ucs_characte
 }
 
 
+
 static const long double pow10_matrix[101] = {
                 0,  1.0e+1,  1.0e+2,  1.0e+3,  1.0e+4,  1.0e+5,
                     1.0e+6,  1.0e+7,  1.0e+8,  1.0e+9,  1.0e+10,
@@ -244,7 +246,7 @@ struct Null {
 
 
 static void * mem_char_ = nullptr;
-static size_t mem_size_ = 1024 * 16;
+static size_t mem_size_ = 1024;
 
 
 static const size_t SIZE_CACHE = 1024;
@@ -813,10 +815,11 @@ protected:
             Type * out,
             const T * source,
             const size_t size
-            ) const {
+            ) {
 
         const Type * const out_start = out;
         const T * const source_end = source + size;
+
 
         *out++ = quot;
         while (true) {
@@ -850,7 +853,7 @@ protected:
             Type * out,
             const T * source,
             const size_t size
-            ) const {
+            ) {
 
         const Type * const out_start = out;
         const T * const source_end = source + size;
@@ -1115,121 +1118,90 @@ public:
         return PyUnicode_FromKindAndData(sizeof(Type), start_str, str - start_str);
     }
 
-
-    /*
     ~BaseDump() {
-        if (mem_size_ > 1024 * 256) {
-            PyMem_RawFree(mem_char_);
-            mem_char_ = nullptr;
-        }
-        if (str > start_str && mem_size_ / (str - start_str) >= 4) {
-            mem_size_ = mem_size_ / 2;
+        if (str > start_str) {
+            mem_size_ = str - start_str;
         }
     }
-     */
 };
 
 
-class dumper : public BaseDump<uint32_t> {
-private:
-    uint32_t * buff = nullptr;
+const size_t PyCompactUnicodeObject_Offset = sizeof(PyCompactUnicodeObject);
 
-    inline void realloc_mem(const size_t n)
-    override
-    {
-        size_t old_pos = str - start_str;
-        buffer_size = (buffer_size + n) * 2;
+const size_t PyBytesObject_Offset = (sizeof(PyBytesObject) - sizeof(size_t));
 
-        buff = (uint32_t *)PyMem_RawRealloc(buff, buffer_size * 4 + sizeof(size_t) * 6);
-
-        start_str = buff + sizeof(size_t) * 6;
-        str = start_str + old_pos;
-        end_str = start_str + buffer_size - 1;
-    }
-
-    inline void init_mem()
-    override
-    {
-        buffer_size = 1024;
-
-        buff = (uint32_t *)PyMem_RawMalloc(buffer_size * 4 + sizeof(size_t) * 6);
-
-        start_str = buff + sizeof(size_t) * 6;
-        str = start_str;
-        end_str = start_str + buffer_size - 1;
-    }
+const size_t PyASCIIObject_Offset = sizeof(PyASCIIObject);
 
 
+struct bytes2 {
+    char b[2];
+};
 
-public:
-    inline PyObject * dump(PyObject * o)
-    override
-    {
-        init_mem();
-        init_cache_mem();
+struct bytes3 {
+    char b[3];
+};
 
-        if (!indent_size) {
-            main_dump(o);
-        } else {
-            main_dump_indent(o);
-        }
-        if (has_error) return nullptr;
+struct bytes4 {
+    char b[4];
+};
 
-        PyUnicodeObject * v = (PyUnicodeObject *)PyUnicode_FromKindAndData(4, nullptr, 0);
+struct bytes5 {
+    char b[5];
+};
 
-        PyUnicodeObject * u = (PyUnicodeObject *)buff;
-
-        uint8_t * vv = (uint8_t *)v;
-        uint8_t * uu = (uint8_t *)u;
-
-        for (int i = 0; i < sizeof(size_t) * 6; i++) {
-            *uu++ = *vv++;
-        }
-
-        u->_base._base.state.kind = 4;
-        u->_base._base.state.ready = 1;
-        u->_base._base.state.ascii = 1;
-        u->_base._base.state.compact = 1;
-        u->_base._base.state.interned = 0;
-
-        u->_base._base.length = str - start_str;
-        u->_base._base.ob_base.ob_refcnt = 1;
-
-        PyObject * s = (PyObject *)u;
-
-        return s;
-    }
-
-
-    dumper(bool _non_string_key, const size_t _indent_size) {
-        non_string_key = _non_string_key;
-        indent_size = _indent_size;
-    }
-
-    dumper(){}
+struct bytes6 {
+    char b[6];
 };
 
 
 
 class dumper_bytes : public BaseDump<uint8_t> {
 protected:
-    PyBytesObject * buff = nullptr;
+    uint8_t * buff = nullptr;
+
+    inline const size_t string_serialization8(
+            uint8_t * out,
+            const uint8_t * source,
+            const size_t size
+    ) {
+
+        const uint8_t * const out_start = out;
+        const uint8_t * const source_end = source + size;
+
+        *out++ = quot;
+        while (true) {
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+
+
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+            str_serialization_unit_
+        }
+        *out++ = quot;
+
+        return out - out_start;
+    }
+
 
     inline void add_string(PyObject * s, size_t & len)
     override
     {
-        const uint8_t * source = (const uint8_t *)PyUnicode_AsUTF8(s);
-        if (!source) {
-            return set_error("not valid utf-8");
-        }
-        size_t size = 0;
-        const size_t kind = PyUnicode_KIND(s);
-
-        if (kind != 1) {
-            size = ((PyCompactUnicodeObject *)s)->utf8_length;
-        } else {
-            size = PyUnicode_GetLength(s);
-        }
+        size_t size = ((PyUnicodeObject *)s)->_base._base.length;
+        const size_t kind = ((PyASCIIObject *)s)->state.kind;
 
         if (size == 0) {
             *str++ = quot;
@@ -1237,9 +1209,22 @@ protected:
             return;
         }
 
-        check(size * kind * 2);
+        const uint8_t * source = (const uint8_t *)PyUnicode_AsUTF8(s);
+        if (!source) {
+            return set_error("not valid utf-8");
+        }
 
-        len = string_serialization8_16<uint8_t>(str, source, size);
+        if (kind != 1) {
+            size = ((PyUnicodeObject *)s)->_base.utf8_length;
+            check(size * kind * 2);
+            len = string_serialization8(str, source, size);
+
+        } else {
+            check(size * kind * 2);
+            len = string_serialization8_16(str, source, size);
+        }
+
+
         str += len;
     }
 
@@ -1379,27 +1364,94 @@ protected:
 
     }
 
+    virtual inline void realloc_mem(const size_t n)
+    override
+    {
+        size_t old_pos = str - start_str;
+        buffer_size = (buffer_size + n) * 2;
+
+        buff = (uint8_t *)PyMem_RawRealloc(buff,buffer_size + PyBytesObject_Offset);
+
+        start_str = buff + PyBytesObject_Offset;
+        str = start_str + old_pos;
+        end_str = start_str + buffer_size - 1;
+    }
+
+    virtual inline void init_mem()
+    override
+    {
+        buffer_size = mem_size_;
+        buff = (uint8_t *)PyMem_RawMalloc(buffer_size + PyBytesObject_Offset);
+
+        PyObject_Init((PyObject *)buff, &PyBytes_Type);
+
+        start_str = buff + PyBytesObject_Offset;
+        str = start_str;
+        end_str = start_str + buffer_size;
+    }
+
+
+public:
+    virtual inline PyObject * dump(PyObject * o)
+    override
+    {
+        init_mem();
+        init_cache_mem();
+
+        if (!indent_size) {
+            main_dump(o);
+        } else {
+            main_dump_indent(o);
+        }
+        if (has_error) return nullptr;
+
+
+        PyBytesObject * bytes_obj = (PyBytesObject *)buff;
+
+        bytes_obj->ob_shash = -1;
+        bytes_obj->ob_base.ob_size = str - start_str;
+        bytes_obj->ob_base.ob_base.ob_refcnt = 1;
+
+        return (PyObject *)bytes_obj;
+    }
+
+    dumper_bytes(bool _non_string_key, const size_t _indent_size) {
+        non_string_key = _non_string_key;
+        indent_size = _indent_size;
+    }
+
+    dumper_bytes() {}
+
+};
+
+
+class dumper_string : public dumper_bytes {
+private:
+    uint8_t * buff = nullptr;
+
     inline void realloc_mem(const size_t n)
     override
     {
         size_t old_pos = str - start_str;
         buffer_size = (buffer_size + n) * 2;
 
-        buff = (PyBytesObject *)PyObject_Realloc(buff,
-                buffer_size + buff->ob_base.ob_base.ob_type->tp_basicsize + 1);
+        buff = (uint8_t *)PyMem_RawRealloc(buff, buffer_size + PyASCIIObject_Offset);
 
-        start_str = (uint8_t *)buff->ob_sval;
+        start_str = buff + PyASCIIObject_Offset;
         str = start_str + old_pos;
-        end_str = start_str + buffer_size - 1;
+        end_str = start_str + buffer_size;
     }
 
     inline void init_mem()
     override
     {
         buffer_size = 1024;
-        buff = (PyBytesObject *)PyBytes_FromStringAndSize(nullptr, buffer_size);
 
-        start_str = (uint8_t *)buff->ob_sval;
+        buff = (uint8_t *)PyMem_RawMalloc(buffer_size + PyASCIIObject_Offset);
+
+        PyObject_Init((PyObject *)buff, &PyUnicode_Type);
+
+        start_str = buff + PyASCIIObject_Offset;
         str = start_str;
         end_str = start_str + buffer_size;
     }
@@ -1419,21 +1471,31 @@ public:
         }
         if (has_error) return nullptr;
 
-        buff->ob_base.ob_size = str - start_str;
+        PyASCIIObject * u = (PyASCIIObject *)buff;
 
-        return (PyObject *)buff;
+        u->hash = -1;
+        u->wstr = nullptr;
+        u->state.kind = 1;
+        u->state.ready = 1;
+        u->state.ascii = 1;
+        u->state.compact = 1;
+        u->state.interned = 0;
+        u->length = str - start_str;
+        u->ob_base.ob_refcnt = 1;
+
+        return (PyObject *)u;
     }
 
-    dumper_bytes(bool _non_string_key, const size_t _indent_size) {
+    dumper_string(bool _non_string_key, const size_t _indent_size) {
         non_string_key = _non_string_key;
         indent_size = _indent_size;
     }
 
-    dumper_bytes() {}
+    dumper_string(){}
 };
 
 
-class dumper_string : public dumper_bytes {
+class dumper : public BaseDump<uint32_t> {
 private:
     uint8_t * buff = nullptr;
 
@@ -1443,25 +1505,25 @@ private:
         size_t old_pos = str - start_str;
         buffer_size = (buffer_size + n) * 2;
 
-        buff = (uint8_t *)PyMem_RawRealloc(buff, buffer_size + sizeof(size_t) * 6);
+        buff = (uint8_t *)PyMem_RawRealloc(buff,buffer_size * 4 + PyCompactUnicodeObject_Offset);
 
-        start_str = buff + sizeof(size_t) * 6;
+        start_str = (uint32_t *)(buff + PyCompactUnicodeObject_Offset);
         str = start_str + old_pos;
-        end_str = start_str + buffer_size - 1;
+        end_str = start_str + buffer_size;
     }
 
     inline void init_mem()
     override
     {
-        buffer_size = 1024;
+        buffer_size = mem_size_;
+        buff = (uint8_t *)PyMem_RawMalloc(buffer_size * 4 + PyCompactUnicodeObject_Offset);
 
-        buff = (uint8_t *)PyMem_RawMalloc(buffer_size + sizeof(size_t) * 6);
+        PyObject_Init((PyObject *)buff, &PyUnicode_Type);
 
-        start_str = buff + sizeof(size_t) * 6;
+        start_str = (uint32_t *)(buff + PyCompactUnicodeObject_Offset);
         str = start_str;
-        end_str = start_str + buffer_size - 1;
+        end_str = start_str + buffer_size;
     }
-
 
 public:
     inline PyObject * dump(PyObject * o)
@@ -1477,36 +1539,32 @@ public:
         }
         if (has_error) return nullptr;
 
-        PyUnicodeObject * v = (PyUnicodeObject *)PyUnicode_FromStringAndSize(nullptr, 0);
+        PyCompactUnicodeObject * u = (PyCompactUnicodeObject *)buff;
 
-        PyUnicodeObject * u = (PyUnicodeObject *)buff;
+        u->_base.state.kind = 4;
+        u->_base.state.ready = 1;
+        u->_base.state.ascii = 0;
+        u->_base.state.compact = 1;
+        u->_base.state.interned = 0;
+        u->_base.wstr = nullptr;
+        u->_base.hash = -1;
+        u->utf8 = nullptr;
+        u->utf8_length = 0;
+        u->wstr_length = 0;
 
-        uint8_t * vv = (uint8_t *)v;
-        uint8_t * uu = (uint8_t *)u;
+        u->_base.length = str - start_str;
+        u->_base.ob_base.ob_refcnt = 1;
 
-        for (int i = 0; i < sizeof(size_t) * 6; i++) {
-            *uu++ = *vv++;
-        }
-
-        u->_base._base.state.kind = 1;
-        u->_base._base.state.ready = 1;
-        u->_base._base.state.ascii = 1;
-        u->_base._base.state.compact = 1;
-        u->_base._base.state.interned = 0;
-
-        u->_base._base.length = str - start_str;
-        u->_base._base.ob_base.ob_refcnt = 1;
-
-        PyObject * s = (PyObject *)u;
-
-        return s;
+        return (PyObject *)u;
     }
 
 
-    dumper_string(bool _non_string_key, const size_t _indent_size) {
+    dumper(bool _non_string_key, const size_t _indent_size) {
         non_string_key = _non_string_key;
         indent_size = _indent_size;
     }
+
+    dumper(){}
 };
 
 
@@ -2083,15 +2141,18 @@ public:
             auto p = BaseParser<uint8_t>((const uint8_t *)PyUnicode_1BYTE_DATA(val),
                                          size_source_string);
             return p.pars();
+
         } else if (kind == 2) {
             auto p = BaseParser<uint16_t>((const uint16_t *)PyUnicode_2BYTE_DATA(val),
                                          size_source_string);
             return p.pars();
+
         } else if (kind == 4) {
             auto p = BaseParser<uint32_t>((const uint32_t *)PyUnicode_4BYTE_DATA(val),
                                          size_source_string);
             return p.pars();
         }
+
         return nullptr;
     }
 };
@@ -2164,8 +2225,8 @@ class parser_bytes : public BaseParser<char> {
 
 public:
     parser_bytes(PyObject * val) {
-        size_source_string = PyBytes_Size(val);
-        data = PyBytes_AsString(val);
+        size_source_string = ((PyBytesObject *)val)->ob_base.ob_size;
+        data = ((PyBytesObject *)val)->ob_sval;
         data_end = data + size_source_string;
     }
 };
@@ -2297,7 +2358,7 @@ static PyObject * dumps(PyObject *self, PyObject *args, PyObject *kwargs) {
         return d.dump(val);
 
     } else {
-        dumper_string d(_non_string_key, indent);
+        dumper d(_non_string_key, indent);
         return d.dump(val);
     }
 }
@@ -2307,7 +2368,7 @@ static PyObject * dumps_(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyObject * val = PyTuple_GetItem(args, 0);
     if (!val) { return nullptr; }
 
-    dumper d;
+    dumper_string d;
     return d.dump(val);
 }
 

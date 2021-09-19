@@ -11,6 +11,38 @@
 
 
 
+#define str_serialization_unit_                                 \
+    if (*source <= quot || *source == slash) {                  \
+        if (source >= source_end) break; \
+        if (*source < space || *source == slash || *source == quot) {\
+            out += char_check(*source++, out);                \
+            continue;                                           \
+        }                                                       \
+        *out++ = *source++;\
+    } else if (*source >= 192) {\
+        if (*source < 224) { \
+            *((bytes2 *)out) = *((bytes2 *)source);\
+            out += 2; source += 2;\
+        } else if (*source < 240) {\
+            *((bytes3 *)out) = *((bytes3 *)source);\
+            out += 3; source += 3;\
+        } else if (*source < 248){\
+            *((bytes4 *)out) = *((bytes4 *)source);\
+            out += 4; source += 4;\
+        }  else if (*source < 252) {\
+            *((bytes5 *)out) = *((bytes5 *)source);\
+            out += 5; source += 5;\
+        } else if (*source < 254) {\
+            *((bytes6 *)out) = *((bytes6 *)source);\
+            out += 6; source += 6;\
+        }  \
+    } else {\
+        *out++ = *source++; \
+    }
+
+
+
+
 #define _utf32toutf16(_v)                                           \
     *out++ = slash;                                                 \
     *out++ = 'u';                                                   \
@@ -164,12 +196,6 @@
         }                                                                   \
     }                                                                      \
     buff[_n] = ptr[_n]
-
-
-
-
-
-
 
 
 
