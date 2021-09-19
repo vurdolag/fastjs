@@ -143,12 +143,12 @@ inline size_t check_type(PyObject * val, bool is_str=false) {
 
 struct Base_type {
     Base_type * types = nullptr;
-    size_t size = 0;
+    Py_ssize_t size = 0;
     size_t type = 0;
 
     void free() {
         if (types) {
-            for (int i = 0; i < size; i++) {
+            for (Py_ssize_t i = 0; i < size; i++) {
                 types[i].free();
             }
         }
@@ -208,10 +208,10 @@ struct TypeField {
 
     void write_sub_type(Base_type * base_type, PyObject * tuple, size_t n, size_t t) {
         auto base_types = (Base_type *)PyMem_Malloc(sizeof(Base_type) * n);
-        for (int i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
             base_types[i] = Base_type();
         }
-        *base_type = {base_types, n, t};
+        *base_type = {base_types, (Py_ssize_t)n, t};
 
         for (size_t i = 0; i < n; i++) {
             PyObject * sub_obj = PyTuple_GetItem(tuple, i);
@@ -338,9 +338,7 @@ struct TypeField {
             subtypes->free();
             PyMem_Free(subtypes);
         }
-
     }
-
 };
 
 
@@ -363,8 +361,8 @@ struct PyType {
     void alloc_fields(size_t n) {
         size = n;
         field_list = (TypeField *)PyMem_Malloc(sizeof(TypeField) * n);
-        for (int i = 0; i < n; i++) {
-            *(field_list + i) = TypeField();
+        for (size_t i = 0; i < n; i++) {
+            field_list[i] = TypeField();
         }
     }
 
@@ -383,7 +381,7 @@ struct PyType {
     }
 
     void check_metadata() {
-        for (int i = 0; i < size; i++) {
+        for (size_t i = 0; i < size; i++) {
             if ((field_list + i)->metadata) {
                 fields_has_metadata = true;
                 break;
@@ -392,7 +390,7 @@ struct PyType {
     }
 
     void free()  {
-        for (int i = 0; i < size; i++) {
+        for (size_t i = 0; i < size; i++) {
             field_list[i].free();
         }
         delete fields_map;
@@ -412,13 +410,9 @@ struct PyType {
  };
 
 
-
-
 static PyType * PyTypeList = nullptr;
 static size_t PyTypeList_size = 16;
 static size_t PyTypeList_index = 0;
-
-
 
 
 inline PyType * get_type(size_t i) {
@@ -428,13 +422,13 @@ inline PyType * get_type(size_t i) {
 inline PyType * new_type(PyObject * val, size_t size) {
     if (PyTypeList == nullptr) {
         PyTypeList = (PyType *)PyMem_Malloc(sizeof(PyType) * PyTypeList_size);
-        for (int i = 0; i < PyTypeList_size; i++) {
+        for (size_t i = 0; i < PyTypeList_size; i++) {
             PyTypeList[i] = PyType();
         }
     }
 
     if (PyTypeList_index >= PyTypeList_size) {
-        int i = PyTypeList_size;
+        size_t i = PyTypeList_size;
         PyTypeList_size *= 2;
         PyTypeList = (PyType *)PyMem_Realloc(PyTypeList, PyTypeList_size);
         for (; i < PyTypeList_size; i++) {
@@ -537,8 +531,8 @@ void print_type(size_t t) {
 
 
 inline bool is_already_add_PyType(PyObject * val) {
-    for (int i = 0; i < PyTypeList_index; i++) {
-        PyType * type = (PyType *)PyTypeList + i;
+    for (size_t i = 0; i < PyTypeList_index; i++) {
+        auto type = (PyType *)PyTypeList + i;
         if (type && type->type == val) {
             return true;
         }
@@ -552,8 +546,8 @@ int check_js_dataclass(PyObject * v) {
         return -1;
     }
 
-    for (int i = 0; i < PyTypeList_index; i++) {
-        PyType * type = get_type(i);
+    for (size_t i = 0; i < PyTypeList_index; i++) {
+        auto type = get_type(i);
         if (type && type->get_flags() == v->ob_type->tp_flags) {
             return i;
         }
@@ -562,33 +556,33 @@ int check_js_dataclass(PyObject * v) {
 }
 
 
-PyObject * check_field(PyObject * key, PyObject * value, int index, int & error_handler) {
+PyObject * check_field(PyObject * key, PyObject * value, int index, bool & error_handler) {
     if (index < 0) return key;
 
-
-    PyType * type = get_type(index);
+    auto type = get_type(index);
 
     if (!type->fields_has_metadata) return key;
 
-    TypeField * field = (*type->fields_map)[PyObject_Hash(key)];
+    auto field = (*type->fields_map)[PyObject_Hash(key)];
 
     if (field->metadata) {
-        if (field->metadata->skip) { return nullptr; }
+        auto metadata = field->metadata;
 
-        if (field->metadata->skip_if_none && value == Py_None) { return nullptr; }
+        if (metadata->skip) { return nullptr; }
 
-        if (field->metadata->js_name) { return field->metadata->js_name; }
+        if (metadata->skip_if_none && value == Py_None) { return nullptr; }
 
-        if (field->metadata->const_len != -1) {
-            if (PyObject_Length(value) != field->metadata->const_len) {
-                error_handler = 1;
+        if (metadata->js_name) { return metadata->js_name; }
+
+        if (metadata->const_len != -1) {
+            if (PyObject_Length(value) != metadata->const_len) {
+                error_handler = true;
                 PyErr_Format(PyExc_TypeError,
                         "field len %d != %d const len",
                         PyObject_Length(value),
-                        field->metadata->const_len);
+                        metadata->const_len);
                 return nullptr;
             }
-
         }
     }
 
@@ -645,7 +639,6 @@ inline bool check(size_t type_value, Base_type * sub, PyObject * val) {
     PyObject * key = nullptr, * value = nullptr, * object = nullptr;
     Py_ssize_t len = 0, i = 0;
 
-
     if (sub->type == ANY_) {
         return true;
 
@@ -701,15 +694,13 @@ inline bool check(size_t type_value, Base_type * sub, PyObject * val) {
             }
         }
         return true;
+
     } else if (type_value == sub->type) {
         return true;
     }
 
     return false;
 }
-
-
-
 
 
 inline bool check_field_obj(PyObject * key, PyObject * value, PyType * type, PyObject * obj) {
@@ -721,7 +712,7 @@ inline bool check_field_obj(PyObject * key, PyObject * value, PyType * type, PyO
         size_t t = check_object_type(value);
 
         if (t == USERTYPE_) {
-            for (int x = 0; x < PyTypeList_index; x++) {
+            for (size_t x = 0; x < PyTypeList_index; x++) {
                 PyType *_type = get_type(x);
                 if (_type && (size_t) _type->type == (size_t) value) {
                     if (field->type != (size_t) _type->type) {
@@ -779,11 +770,10 @@ inline bool check_field_obj(PyObject * key, PyObject * value, PyType * type, PyO
 }
 
 
-
 PyObject * check_object(PyObject * obj) {
     if (!PyTypeList) return obj;
 
-    for (int i = 0; i < PyTypeList_index; i++) {
+    for (size_t i = 0; i < PyTypeList_index; i++) {
         PyType * type = get_type(i);
 
         PyObject *key, *value;
@@ -901,7 +891,7 @@ PyObject * print(PyObject *self, PyObject *args) {
 
 
 PyObject * free(PyObject *self, PyObject *args) {
-    for (int i = 0; i < PyTypeList_index; i++) {
+    for (size_t i = 0; i < PyTypeList_index; i++) {
         ((PyType *)PyTypeList + i)->free();
     }
     PyTypeList_index = 0;
