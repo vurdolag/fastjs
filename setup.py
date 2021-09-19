@@ -1,8 +1,7 @@
 from setuptools import setup, Extension, find_packages
 
 
-arg_compile = [
-    '-O2', "std=c++17"]
+arg_compile = ['-O2']
 
 module1 = Extension('fastjs',
                     sources=['src/fastjs.cpp',
