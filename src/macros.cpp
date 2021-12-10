@@ -61,7 +61,7 @@
 
 
 #define str_escape_pars_and_check(_n)                                   \
-    if (ptr[_n] == '\\' || ptr[_n] <= '"') {                          \
+    if (ptr[_n] == '\\' || (ptr[_n] <= '"' && ptr[_n-1] != '\\')) {                          \
         if (ptr[_n] <= '"') {                                            \
             if (ptr[_n] < ' ') {                                        \
                 return set_error("error symbol");                       \

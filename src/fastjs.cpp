@@ -1618,6 +1618,7 @@ protected:
             const size_t n
             ) {
 
+
         const Type * ptr = source;
         const Type ** const p = &ptr;
 
