@@ -106,7 +106,7 @@ inline void convertUTF32ToUTF16(const uint32_t cUTF32, uint32_t &h, uint32_t &l)
 
 
 template <class T>
-inline size_t encode_unicode_character(char * buffer, const T ucs_character) {
+inline size_t encode_unicode_character(uint8_t *buffer, const T ucs_character) {
     if (ucs_character <= 0x7F) {
         buffer[0] = ucs_character;
         return 1;
@@ -1402,7 +1402,6 @@ protected:
         return r;
     }
 
-
     inline long double add_exponent(long double r, int e, bool sig) const {
         if (!e) { return r; }
 
@@ -1647,7 +1646,6 @@ protected:
             ptr += 16;
         }
     }
-
 
     virtual PyObject * str_escape_parser(const size_t size) {
         if (mem_char_ == nullptr ) {
@@ -1898,7 +1896,7 @@ public:
 };
 
 
-class parser_bytes : public BaseParser<char> {
+class parser_bytes : public BaseParser<uint8_t> {
     inline PyObject * set_str(const void * buff, const size_t size, const int kind_) const
     override
     {
@@ -1906,12 +1904,12 @@ class parser_bytes : public BaseParser<char> {
     }
 
     inline PyObject * string_writer(
-            const char * buff_start,
-            char * buff,
-            const char * source,
+            const uint8_t * buff_start,
+            uint8_t * buff,
+            const uint8_t * source,
             const size_t n) {
-        const char * ptr = source;
-        const char ** p = &ptr;
+        const uint8_t * ptr = source;
+        const uint8_t ** p = &ptr;
 
         uint32_t v = 0;
 
@@ -1952,9 +1950,9 @@ class parser_bytes : public BaseParser<char> {
             mem_char_ = PyMem_Realloc(mem_char_, mem_size_);
         }
 
-        char * buff = (char *)mem_char_;
-        const char * buff_start = buff;
-        char * target_str = (char *)find_str;
+        uint8_t * buff = (uint8_t *)mem_char_;
+        const uint8_t * buff_start = buff;
+        uint8_t * target_str = (uint8_t *)find_str;
 
         memcpy(buff, target_str, size);
         buff += size;
@@ -1966,7 +1964,7 @@ class parser_bytes : public BaseParser<char> {
 public:
     parser_bytes(PyObject * val) {
         size_source_string = ((PyBytesObject *)val)->ob_base.ob_size;
-        data = ((PyBytesObject *)val)->ob_sval;
+        data = (uint8_t *)((PyBytesObject *)val)->ob_sval;
         data_end = data + size_source_string;
     }
 };
@@ -2143,7 +2141,6 @@ static struct PyModuleDef module_def = {
         methods,
         nullptr,
 };
-
 
 
 PyMODINIT_FUNC PyInit_fastjs() {

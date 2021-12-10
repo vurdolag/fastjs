@@ -71,7 +71,7 @@
                 return set_str(buff_start, (buff - buff_start) + _n, 4);\
             }                                                           \
         }                                                               \
-        if (ptr[_n] == '//') {                                           \
+        if (ptr[_n] == '\\') {                                           \
             ptr += _n + 1;                                              \
             buff[_n] = char_check_2_byte(p);                            \
             buff += _n + 1;                                             \
